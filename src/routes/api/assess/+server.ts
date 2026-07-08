@@ -24,7 +24,10 @@ export const POST: RequestHandler = async ({ request, url }) => {
 
 	try {
 		const result = await assess(key, region, refText, audio);
-		return json({ configured: true, ...result });
+		// 청구 기준이 되는 오디오 길이(초). PCM 16kHz·16bit·mono → 바이트/(16000*2)
+		const pcmBytes = extractPcm(audio).byteLength;
+		const audioSeconds = Math.round((pcmBytes / (16000 * 2)) * 10) / 10;
+		return json({ configured: true, audioSeconds, ...result });
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : String(e);
 		throw error(502, `Azure 발음평가 실패: ${msg}`);

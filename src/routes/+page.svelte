@@ -4,6 +4,8 @@
 	import { matchScore, markChars, scoreComment, type CharMark } from '$lib/score';
 	import { WavRecorder } from '$lib/wavRecorder';
 	import { scenes } from '$lib/scenes';
+	import { loadUsage, addUsage, usageDisplay } from '$lib/usage';
+	import { onMount } from 'svelte';
 
 	// ─── 상태 ───────────────────────────────────────────
 	let index = $state(0);
@@ -242,10 +244,18 @@
 		completeness?: number;
 		pron?: number;
 		words?: AzureWord[];
+		audioSeconds?: number;
 	}
 	let azure = $state<AzureScore | null>(null);
 	let azureLoading = $state(false);
 	let azureError = $state<string | null>(null);
+
+	// Azure 사용량 (월별 누적)
+	let usage = $state(loadUsage());
+	const usageInfo = $derived(usageDisplay(usage));
+	onMount(() => {
+		usage = loadUsage(); // 클라이언트에서 최신값 로드(월 리셋 반영)
+	});
 
 	// 발음이 약한 글자(60점 미만 또는 빠뜨린 글자)
 	const weakWords = $derived(
@@ -270,6 +280,10 @@
 			}
 			const data = (await res.json()) as AzureScore;
 			azure = data; // configured=false면 프론트가 무료 채점만 보여줌
+			// 실제 Azure 채점이 일어난 경우에만 사용량 누적
+			if (data.configured && typeof data.audioSeconds === 'number') {
+				usage = addUsage(data.audioSeconds);
+			}
 		} catch (e) {
 			azureError = e instanceof Error ? e.message : String(e);
 		} finally {
@@ -362,6 +376,23 @@
 		<a class="tab vocab-link" href="/vocab">📖 단어장</a>
 		<a class="tab vocab-link" href="/games">🎮 게임</a>
 	</div>
+
+	<!-- Azure 발음평가 사용량 (이번 달) -->
+	{#if usage.calls > 0}
+		<div class="usage" class:near={usageInfo.near}>
+			<div class="usage-top">
+				<span>🎯 이번 달 발음평가 사용량</span>
+				<span class="usage-val">{usageInfo.usedLabel} / {usageInfo.limitMin}분</span>
+			</div>
+			<div class="usage-bar">
+				<div class="usage-fill" style="width:{usageInfo.pct}%"></div>
+			</div>
+			<div class="usage-sub">
+				{usageInfo.calls}회 채점 · 무료 한도의 {usageInfo.pct}%
+				{#if usageInfo.near}<strong> ⚠️ 한도 임박!</strong>{/if}
+			</div>
+		</div>
+	{/if}
 
 	<section class="card">
 		<div class="part">{q.part}</div>
@@ -610,6 +641,49 @@
 	}
 	.vocab-link:first-of-type {
 		margin-left: auto;
+	}
+	.usage {
+		background: #1a1e27;
+		border: 1px solid #2a303c;
+		border-radius: 12px;
+		padding: 0.75rem 0.9rem;
+		margin-bottom: 0.9rem;
+		font-size: 0.85rem;
+	}
+	.usage.near {
+		border-color: #b45309;
+	}
+	.usage-top {
+		display: flex;
+		justify-content: space-between;
+		color: #b7bec9;
+		margin-bottom: 0.4rem;
+	}
+	.usage-val {
+		font-variant-numeric: tabular-nums;
+		color: #e8eaed;
+	}
+	.usage-bar {
+		height: 7px;
+		background: #12151c;
+		border-radius: 4px;
+		overflow: hidden;
+	}
+	.usage-fill {
+		height: 100%;
+		background: linear-gradient(90deg, #22c55e, #7cc6ff);
+		transition: width 0.3s;
+	}
+	.usage.near .usage-fill {
+		background: linear-gradient(90deg, #f59e0b, #ef4444);
+	}
+	.usage-sub {
+		margin-top: 0.35rem;
+		color: #8b93a1;
+		font-size: 0.78rem;
+	}
+	.usage-sub strong {
+		color: #fca5a5;
 	}
 	.card {
 		background: #1a1e27;
