@@ -1,6 +1,8 @@
 // 오디오(팟캐스트) 모드용 순차 TTS 재생기.
-// 여러 발화를 한국어/중국어를 오가며 순서대로 읽고, 중간 멈춤도 넣는다.
-// 운전 중 화면 없이 귀로만 학습하는 용도.
+// Azure Neural TTS(성우급) 기반 — lib/tts.ts의 speak()로 재생하고,
+// 실패 시 자동으로 브라우저 TTS로 폴백된다.
+
+import { speak, stopSpeak } from './tts';
 
 export interface Segment {
 	text: string;
@@ -22,54 +24,41 @@ export class AudioPlayer {
 		this.onState = cb;
 	}
 
-	private pickVoice(lang: string): SpeechSynthesisVoice | undefined {
-		const voices = speechSynthesis.getVoices();
-		if (lang.startsWith('zh')) {
-			const zh = voices.filter((v) => v.lang.replace('_', '-').toLowerCase().startsWith('zh'));
-			const female = /female|xiaoxiao|xiaoyi|ting-?ting|mei-?jia|sinji|yaoyao|女/i;
-			return zh.find((v) => female.test(v.name)) ?? zh[0];
-		}
-		const ko = voices.filter((v) => v.lang.toLowerCase().startsWith('ko'));
-		return ko[0];
-	}
-
 	play(segments: Segment[], startAt = 0) {
 		this.stop();
 		this.queue = segments;
 		this.idx = startAt;
 		this.stopped = false;
-		this.speakNext();
+		void this.run();
 	}
 
-	private speakNext() {
-		if (this.stopped || this.idx >= this.queue.length) {
-			this.stopped = true;
-			this.onState(false, this.idx);
-			return;
-		}
-		const seg = this.queue[this.idx];
-		this.onState(true, this.idx);
-		const u = new SpeechSynthesisUtterance(seg.text);
-		u.lang = seg.lang;
-		u.rate = seg.rate ?? (seg.lang.startsWith('zh') ? 0.85 : 1);
-		const v = this.pickVoice(seg.lang);
-		if (v) u.voice = v;
-		u.onend = () => {
+	private async run() {
+		while (!this.stopped && this.idx < this.queue.length) {
+			const seg = this.queue[this.idx];
+			this.onState(true, this.idx);
+			await speak(seg.text, {
+				lang: seg.lang.startsWith('zh') ? 'zh' : 'ko',
+				// 중국어는 또박또박(0.9), 한국어 설명은 조금 빠르게(1.15)
+				rate: seg.rate ?? (seg.lang.startsWith('zh') ? 0.9 : 1.15)
+			});
 			if (this.stopped) return;
 			this.idx += 1;
 			const pause = seg.pauseAfterMs ?? 0;
 			if (pause > 0) {
-				this.pauseTimer = setTimeout(() => this.speakNext(), pause);
-			} else {
-				this.speakNext();
+				await this.wait(pause);
+				if (this.stopped) return;
 			}
-		};
-		u.onerror = () => {
-			if (this.stopped) return;
-			this.idx += 1;
-			this.speakNext();
-		};
-		speechSynthesis.speak(u);
+		}
+		if (!this.stopped) {
+			this.stopped = true;
+			this.onState(false, this.idx);
+		}
+	}
+
+	private wait(ms: number): Promise<void> {
+		return new Promise((resolve) => {
+			this.pauseTimer = setTimeout(resolve, ms);
+		});
 	}
 
 	stop() {
@@ -78,7 +67,7 @@ export class AudioPlayer {
 			clearTimeout(this.pauseTimer);
 			this.pauseTimer = null;
 		}
-		if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+		stopSpeak();
 		this.onState(false, this.idx);
 	}
 

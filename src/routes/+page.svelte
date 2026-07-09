@@ -5,6 +5,7 @@
 	import { WavRecorder } from '$lib/wavRecorder';
 	import { scenes } from '$lib/scenes';
 	import { loadUsage, addUsage, usageDisplay } from '$lib/usage';
+	import { speak } from '$lib/tts';
 	import { onMount } from 'svelte';
 
 	// ─── 상태 ───────────────────────────────────────────
@@ -120,50 +121,28 @@
 	let speakingWord = $state<string | null>(null); // 지금 읽고 있는 글자
 	let speechRate = $state(0.85); // 사용자가 조절하는 재생 속도(0.5~1.2)
 
-	// 중국어 여성 보이스를 우선 선택. 없으면 중국어 아무 보이스.
-	function pickChineseFemaleVoice(): SpeechSynthesisVoice | undefined {
-		const voices = speechSynthesis.getVoices();
-		const zh = voices.filter((v) => v.lang.replace('_', '-').toLowerCase().startsWith('zh'));
-		if (zh.length === 0) return undefined;
-		// 이름에 여성 힌트가 있는 보이스 우선 (OS별 대표 여성 중국어 보이스 포함)
-		const femaleHints =
-			/female|xiaoxiao|xiaoyi|ting-?ting|tingting|mei-?jia|meijia|sinji|yaoyao|huihui|kangkang|nvsheng|女/i;
-		const female = zh.find((v) => femaleHints.test(v.name));
-		// 남성으로 알려진 보이스는 배제
-		const maleHints = /male|kangkang.*male|yunyang|yunxi|liang|男/i;
-		const notMale = zh.find((v) => !maleHints.test(v.name));
-		return female ?? notMale ?? zh[0];
-	}
-
-	// 임의의 중국어 텍스트를 읽어줌. slow=true면 더 느리게(글자 하나 연습용)
+	// 고품질(Azure Neural) TTS로 중국어 텍스트 재생. slow=true면 더 느리게.
 	function speakText(text: string, slow = false, word: string | null = null) {
-		if (typeof speechSynthesis === 'undefined') {
-			ttsSupported = false;
-			return;
-		}
-		speechSynthesis.cancel();
-		const u = new SpeechSynthesisUtterance(text);
-		u.lang = 'zh-CN';
-		// 글자 하나는 문장보다 조금 더 느리게, 하지만 사용자 속도 설정을 기준으로
-		u.rate = slow ? Math.max(0.4, speechRate - 0.25) : speechRate;
-		u.onstart = () => {
-			isSpeaking = true;
-			speakingWord = word;
-		};
-		u.onend = () => {
-			isSpeaking = false;
-			speakingWord = null;
-		};
-		u.onerror = () => {
-			isSpeaking = false;
-			speakingWord = null;
-		};
-		const voice = pickChineseFemaleVoice();
-		if (voice) u.voice = voice;
-		speechSynthesis.speak(u);
+		const rate = slow ? Math.max(0.5, speechRate - 0.2) : speechRate;
+		speak(text, {
+			lang: 'zh',
+			rate,
+			onstart: () => {
+				isSpeaking = true;
+				speakingWord = word;
+			},
+			onend: () => {
+				isSpeaking = false;
+				speakingWord = null;
+			},
+			onerror: () => {
+				isSpeaking = false;
+				speakingWord = null;
+			}
+		});
 	}
 
-	function speak() {
+	function speak_() {
 		speakText(q.sample, false);
 	}
 
@@ -376,6 +355,7 @@
 		<a class="tab vocab-link" href="/vocab">📖 단어장</a>
 		<a class="tab vocab-link" href="/games">🎮 게임</a>
 		<a class="tab vocab-link" href="/audio">🎧 오디오</a>
+		<a class="tab vocab-link" href="/settings">🔊 음성</a>
 	</div>
 
 	<!-- Azure 발음평가 사용량 (이번 달) -->
@@ -431,7 +411,7 @@
 			{:else}
 				<button class="warn" onclick={stopAnswer}>■ 중지</button>
 			{/if}
-			<button onclick={speak} disabled={isSpeaking || !ttsSupported}>
+			<button onclick={speak_} disabled={isSpeaking || !ttsSupported}>
 				🔊 {isSpeaking ? '재생 중…' : '모범 발음 듣기'}
 			</button>
 		</div>

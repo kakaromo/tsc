@@ -10,6 +10,8 @@
 	let curIndex = $state(0);
 	let repeat = $state(true); // 끝나면 처음부터 반복
 	let pauseSec = $state(2); // 단어 뜻 떠올릴 시간
+	let koRate = $state(1.2); // 한국어(설명·뜻) 재생 속도
+	let zhRate = $state(0.9); // 중국어 재생 속도
 
 	const player = new AudioPlayer();
 	player.setOnState((p, i) => {
@@ -34,12 +36,12 @@
 		for (const g of vocabGroups) {
 			for (const v of g.items) {
 				// 중국어 → (멈춤, 뜻 떠올리기) → 한국어 뜻
-				segs.push({ text: v.hanzi, lang: 'zh-CN', pauseAfterMs: pauseSec * 1000 });
+				segs.push({ text: v.hanzi, lang: 'zh-CN', rate: zhRate, pauseAfterMs: pauseSec * 1000 });
 				labs.push(`${v.hanzi} (${v.pinyin})`);
-				segs.push({ text: v.ko, lang: 'ko-KR', pauseAfterMs: 400 });
+				segs.push({ text: v.ko, lang: 'ko-KR', rate: koRate, pauseAfterMs: 400 });
 				labs.push(`뜻: ${v.ko}`);
 				// 중국어 한 번 더 (각인)
-				segs.push({ text: v.hanzi, lang: 'zh-CN', pauseAfterMs: 700 });
+				segs.push({ text: v.hanzi, lang: 'zh-CN', rate: zhRate, pauseAfterMs: 700 });
 				labs.push(`${v.hanzi} (${v.pinyin})`);
 			}
 		}
@@ -51,11 +53,11 @@
 		const labs: string[] = [];
 		for (const g of grammarPoints) {
 			if (!g.audioScript) continue;
-			segs.push({ text: g.audioScript, lang: 'ko-KR', pauseAfterMs: 800 });
+			segs.push({ text: g.audioScript, lang: 'ko-KR', rate: koRate, pauseAfterMs: 800 });
 			labs.push(g.title);
 			// 예문 중국어 각인
 			for (const e of g.examples) {
-				segs.push({ text: e.cn, lang: 'zh-CN', pauseAfterMs: 500 });
+				segs.push({ text: e.cn, lang: 'zh-CN', rate: zhRate, pauseAfterMs: 500 });
 				labs.push(`${e.cn} — ${e.ko}`);
 			}
 		}
@@ -132,9 +134,17 @@
 		<label class="opt">
 			<input type="checkbox" bind:checked={repeat} /> 끝나면 반복
 		</label>
+		<label class="opt slider">
+			<span>🇰🇷 한국어 속도: {koRate.toFixed(2)}x</span>
+			<input type="range" min="0.8" max="1.6" step="0.05" bind:value={koRate} onchange={rebuild} />
+		</label>
+		<label class="opt slider">
+			<span>🇨🇳 중국어 속도: {zhRate.toFixed(2)}x</span>
+			<input type="range" min="0.6" max="1.2" step="0.05" bind:value={zhRate} onchange={rebuild} />
+		</label>
 		{#if content === 'vocab'}
 			<label class="opt slider">
-				<span>뜸 들이는 시간: {pauseSec}초</span>
+				<span>⏳ 뜸 들이는 시간: {pauseSec}초</span>
 				<input type="range" min="0" max="5" step="1" bind:value={pauseSec} onchange={rebuild} />
 			</label>
 		{/if}

@@ -1,31 +1,20 @@
 <script lang="ts">
 	import { vocabGroups } from '$lib/vocab';
 	import { grammarPoints } from '$lib/grammar';
+	import { speak } from '$lib/tts';
 
 	let view = $state<'vocab' | 'grammar'>('vocab');
 	let speaking = $state<string | null>(null);
-	let rate = $state(0.8);
-
-	function pickVoice(): SpeechSynthesisVoice | undefined {
-		const voices = speechSynthesis.getVoices();
-		const zh = voices.filter((v) => v.lang.replace('_', '-').toLowerCase().startsWith('zh'));
-		if (!zh.length) return undefined;
-		const female = /female|xiaoxiao|xiaoyi|ting-?ting|mei-?jia|sinji|yaoyao|女/i;
-		return zh.find((v) => female.test(v.name)) ?? zh[0];
-	}
+	let rate = $state(0.85);
 
 	function say(text: string) {
-		if (typeof speechSynthesis === 'undefined') return;
-		speechSynthesis.cancel();
-		const u = new SpeechSynthesisUtterance(text);
-		u.lang = 'zh-CN';
-		u.rate = rate;
-		u.onstart = () => (speaking = text);
-		u.onend = () => (speaking = null);
-		u.onerror = () => (speaking = null);
-		const v = pickVoice();
-		if (v) u.voice = v;
-		speechSynthesis.speak(u);
+		speak(text, {
+			lang: 'zh',
+			rate,
+			onstart: () => (speaking = text),
+			onend: () => (speaking = null),
+			onerror: () => (speaking = null)
+		});
 	}
 </script>
 

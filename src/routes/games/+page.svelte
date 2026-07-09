@@ -13,6 +13,7 @@
 		type SrsMap
 	} from '$lib/gameLogic';
 	import type { Vocab } from '$lib/vocab';
+	import { speak } from '$lib/tts';
 
 	type Mode = 'quiz' | 'flash' | 'order';
 	let mode = $state<Mode>('quiz');
@@ -53,19 +54,9 @@
 		totalCount += 1;
 	}
 
-	// ─── 발음 (여성) ───────────────────────────────────
+	// ─── 발음 (고품질 Azure Neural TTS) ────────────────
 	function say(text: string) {
-		if (typeof speechSynthesis === 'undefined') return;
-		speechSynthesis.cancel();
-		const u = new SpeechSynthesisUtterance(text);
-		u.lang = 'zh-CN';
-		u.rate = 0.85;
-		const voices = speechSynthesis.getVoices();
-		const zh = voices.filter((v) => v.lang.replace('_', '-').toLowerCase().startsWith('zh'));
-		const female = /female|xiaoxiao|xiaoyi|ting-?ting|mei-?jia|sinji|yaoyao|女/i;
-		const v = zh.find((x) => female.test(x.name)) ?? zh[0];
-		if (v) u.voice = v;
-		speechSynthesis.speak(u);
+		speak(text, { lang: 'zh', rate: 0.9 });
 	}
 
 	// ─── 게임1: 퀴즈 (뜻 맞히기) ───────────────────────
