@@ -375,6 +375,7 @@
 		{/each}
 		<a class="tab vocab-link" href="/vocab">📖 단어장</a>
 		<a class="tab vocab-link" href="/games">🎮 게임</a>
+		<a class="tab vocab-link" href="/audio">🎧 오디오</a>
 	</div>
 
 	<!-- Azure 발음평가 사용량 (이번 달) -->

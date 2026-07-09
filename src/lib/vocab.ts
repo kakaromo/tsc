@@ -128,5 +128,143 @@ export const vocabGroups: VocabGroup[] = [
 			{ hanzi: '妈妈', pinyin: 'māma', ko: '엄마' },
 			{ hanzi: '老师', pinyin: 'lǎoshī', ko: '선생님' }
 		]
+	},
+
+	// ─── 주제별 확장 어휘 ──────────────────────────────
+	{
+		title: '음식·음료 (饮食)',
+		desc: '식당·집·가게 상황에 자주 등장',
+		items: [
+			{ hanzi: '米饭', pinyin: 'mǐfàn', ko: '쌀밥' },
+			{ hanzi: '面条', pinyin: 'miàntiáo', ko: '국수' },
+			{ hanzi: '面包', pinyin: 'miànbāo', ko: '빵' },
+			{ hanzi: '鸡蛋', pinyin: 'jīdàn', ko: '계란' },
+			{ hanzi: '牛奶', pinyin: 'niúnǎi', ko: '우유' },
+			{ hanzi: '咖啡', pinyin: 'kāfēi', ko: '커피' },
+			{ hanzi: '茶', pinyin: 'chá', ko: '차' },
+			{ hanzi: '水果', pinyin: 'shuǐguǒ', ko: '과일' },
+			{ hanzi: '蔬菜', pinyin: 'shūcài', ko: '채소' },
+			{ hanzi: '鱼', pinyin: 'yú', ko: '생선' },
+			{ hanzi: '肉', pinyin: 'ròu', ko: '고기' },
+			{ hanzi: '菜', pinyin: 'cài', ko: '요리, 반찬' }
+		]
+	},
+	{
+		title: '교통·이동 (交通)',
+		desc: '길·이동 상황. 「坐/骑 + 교통수단」',
+		items: [
+			{ hanzi: '汽车', pinyin: 'qìchē', ko: '자동차' },
+			{ hanzi: '公共汽车', pinyin: 'gōnggòng qìchē', ko: '버스' },
+			{ hanzi: '地铁', pinyin: 'dìtiě', ko: '지하철' },
+			{ hanzi: '火车', pinyin: 'huǒchē', ko: '기차' },
+			{ hanzi: '飞机', pinyin: 'fēijī', ko: '비행기' },
+			{ hanzi: '自行车', pinyin: 'zìxíngchē', ko: '자전거', note: '骑自行车' },
+			{ hanzi: '出租车', pinyin: 'chūzūchē', ko: '택시' },
+			{ hanzi: '开车', pinyin: 'kāi chē', ko: '운전하다' },
+			{ hanzi: '走路', pinyin: 'zǒu lù', ko: '걷다' },
+			{ hanzi: '坐', pinyin: 'zuò', ko: '(교통수단을) 타다', note: '坐地铁' }
+		]
+	},
+	{
+		title: '장소·건물 (地点)',
+		desc: '「在 + 장소」로 위치·행동 배경 표현',
+		items: [
+			{ hanzi: '学校', pinyin: 'xuéxiào', ko: '학교' },
+			{ hanzi: '医院', pinyin: 'yīyuàn', ko: '병원' },
+			{ hanzi: '银行', pinyin: 'yínháng', ko: '은행' },
+			{ hanzi: '公司', pinyin: 'gōngsī', ko: '회사' },
+			{ hanzi: '超市', pinyin: 'chāoshì', ko: '슈퍼마켓' },
+			{ hanzi: '公园', pinyin: 'gōngyuán', ko: '공원' },
+			{ hanzi: '机场', pinyin: 'jīchǎng', ko: '공항' },
+			{ hanzi: '家', pinyin: 'jiā', ko: '집' },
+			{ hanzi: '图书馆', pinyin: 'túshūguǎn', ko: '도서관' },
+			{ hanzi: '厨房', pinyin: 'chúfáng', ko: '주방' }
+		]
+	},
+	{
+		title: '시간 표현 (时间)',
+		desc: '시점·순서. 문장 앞이나 주어 뒤에 옴',
+		items: [
+			{ hanzi: '昨天', pinyin: 'zuótiān', ko: '어제' },
+			{ hanzi: '明天', pinyin: 'míngtiān', ko: '내일' },
+			{ hanzi: '上午', pinyin: 'shàngwǔ', ko: '오전' },
+			{ hanzi: '下午', pinyin: 'xiàwǔ', ko: '오후' },
+			{ hanzi: '中午', pinyin: 'zhōngwǔ', ko: '점심때' },
+			{ hanzi: '点', pinyin: 'diǎn', ko: '시 (시각)', note: '三点' },
+			{ hanzi: '分', pinyin: 'fēn', ko: '분' },
+			{ hanzi: '星期', pinyin: 'xīngqī', ko: '요일, 주', note: '星期一' },
+			{ hanzi: '月', pinyin: 'yuè', ko: '월, 달' },
+			{ hanzi: '年', pinyin: 'nián', ko: '년, 해' },
+			{ hanzi: '以前', pinyin: 'yǐqián', ko: '이전, 예전' },
+			{ hanzi: '以后', pinyin: 'yǐhòu', ko: '이후, 나중' }
+		]
+	},
+	{
+		title: '감정·상태 (情感)',
+		desc: '기분·느낌. 「觉得 + 형용사」로 의견 표현에도',
+		items: [
+			{ hanzi: '高兴', pinyin: 'gāoxìng', ko: '기쁘다' },
+			{ hanzi: '快乐', pinyin: 'kuàilè', ko: '즐겁다' },
+			{ hanzi: '累', pinyin: 'lèi', ko: '피곤하다' },
+			{ hanzi: '忙', pinyin: 'máng', ko: '바쁘다' },
+			{ hanzi: '生气', pinyin: 'shēngqì', ko: '화나다' },
+			{ hanzi: '难过', pinyin: 'nánguò', ko: '슬프다' },
+			{ hanzi: '喜欢', pinyin: 'xǐhuan', ko: '좋아하다' },
+			{ hanzi: '害怕', pinyin: 'hàipà', ko: '무섭다' },
+			{ hanzi: '紧张', pinyin: 'jǐnzhāng', ko: '긴장되다' },
+			{ hanzi: '舒服', pinyin: 'shūfu', ko: '편안하다' }
+		]
+	},
+	{
+		title: '자주 쓰는 동사 (动词+)',
+		desc: '일상 행동. 3부·4부 답변에도 두루 쓰임',
+		items: [
+			{ hanzi: '去', pinyin: 'qù', ko: '가다' },
+			{ hanzi: '来', pinyin: 'lái', ko: '오다' },
+			{ hanzi: '回', pinyin: 'huí', ko: '돌아가다', note: '回家' },
+			{ hanzi: '工作', pinyin: 'gōngzuò', ko: '일하다' },
+			{ hanzi: '学习', pinyin: 'xuéxí', ko: '공부하다' },
+			{ hanzi: '休息', pinyin: 'xiūxi', ko: '쉬다' },
+			{ hanzi: '睡觉', pinyin: 'shuì jiào', ko: '자다' },
+			{ hanzi: '起床', pinyin: 'qǐ chuáng', ko: '일어나다' },
+			{ hanzi: '运动', pinyin: 'yùndòng', ko: '운동하다' },
+			{ hanzi: '帮助', pinyin: 'bāngzhù', ko: '돕다' },
+			{ hanzi: '认识', pinyin: 'rènshi', ko: '알다, 알게 되다' },
+			{ hanzi: '希望', pinyin: 'xīwàng', ko: '바라다, 희망하다' }
+		]
+	},
+	{
+		title: '형용사 (形容词)',
+		desc: '「很 + 형용사」로 상태 묘사. 3급 핵심',
+		items: [
+			{ hanzi: '好', pinyin: 'hǎo', ko: '좋다' },
+			{ hanzi: '多', pinyin: 'duō', ko: '많다' },
+			{ hanzi: '少', pinyin: 'shǎo', ko: '적다' },
+			{ hanzi: '高', pinyin: 'gāo', ko: '높다, (키가) 크다' },
+			{ hanzi: '长', pinyin: 'cháng', ko: '길다' },
+			{ hanzi: '快', pinyin: 'kuài', ko: '빠르다' },
+			{ hanzi: '慢', pinyin: 'màn', ko: '느리다' },
+			{ hanzi: '漂亮', pinyin: 'piàoliang', ko: '예쁘다' },
+			{ hanzi: '干净', pinyin: 'gānjìng', ko: '깨끗하다' },
+			{ hanzi: '容易', pinyin: 'róngyì', ko: '쉽다' },
+			{ hanzi: '难', pinyin: 'nán', ko: '어렵다' },
+			{ hanzi: '重要', pinyin: 'zhòngyào', ko: '중요하다' }
+		]
+	},
+	{
+		title: '연결·부사 (连接词)',
+		desc: '문장을 잇고 늘리는 말. 5부 의견 표현에 필수',
+		items: [
+			{ hanzi: '因为', pinyin: 'yīnwèi', ko: '왜냐하면', note: '因为…所以…' },
+			{ hanzi: '所以', pinyin: 'suǒyǐ', ko: '그래서' },
+			{ hanzi: '但是', pinyin: 'dànshì', ko: '하지만' },
+			{ hanzi: '而且', pinyin: 'érqiě', ko: '게다가' },
+			{ hanzi: '还', pinyin: 'hái', ko: '또, 아직' },
+			{ hanzi: '也', pinyin: 'yě', ko: '~도, 또한' },
+			{ hanzi: '都', pinyin: 'dōu', ko: '모두, 다' },
+			{ hanzi: '一起', pinyin: 'yìqǐ', ko: '함께' },
+			{ hanzi: '一定', pinyin: 'yídìng', ko: '반드시, 꼭' },
+			{ hanzi: '觉得', pinyin: 'juéde', ko: '~라고 생각하다', note: '我觉得…' }
+		]
 	}
 ];
