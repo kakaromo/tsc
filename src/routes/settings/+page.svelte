@@ -14,9 +14,25 @@
 	let koSel = $state('');
 	let previewing = $state<string | null>(null);
 
-	onMount(() => {
+	// TTS 사용량
+	interface TtsUsage {
+		tracked: boolean;
+		used?: number;
+		limit?: number;
+		over?: boolean;
+		pct?: number;
+	}
+	let usage = $state<TtsUsage | null>(null);
+
+	onMount(async () => {
 		zhSel = getZhVoice();
 		koSel = getKoVoice();
+		try {
+			const res = await fetch('/api/usage/tts');
+			usage = await res.json();
+		} catch {
+			usage = null;
+		}
 	});
 	onDestroy(() => stopSpeak());
 
@@ -54,6 +70,23 @@
 		<h1>🔊 음성 설정</h1>
 	</header>
 	<p class="hint">원하는 목소리를 고르세요. 누르면 미리 들려주고, 앱 전체에 적용됩니다.</p>
+
+	<!-- 성우 TTS 사용량 -->
+	{#if usage?.tracked}
+		<div class="usage" class:over={usage.over}>
+			<div class="usage-top">
+				<span>🎙 이번 달 성우 음성 사용량</span>
+				<span class="usage-val">{usage.pct}%</span>
+			</div>
+			<div class="usage-bar"><div class="usage-fill" style="width:{usage.pct}%"></div></div>
+			<div class="usage-sub">
+				{(usage.used ?? 0).toLocaleString()} / {(usage.limit ?? 0).toLocaleString()}자 (무료 한도)
+				{#if usage.over}
+					<strong> ⚠️ 한도 소진 — 자동으로 기본(무료) 음성으로 전환됐어요.</strong>
+				{/if}
+			</div>
+		</div>
+	{/if}
 
 	<section>
 		<h2>🇨🇳 중국어 음성</h2>
@@ -109,6 +142,49 @@
 		color: #8b93a1;
 		font-size: 0.85rem;
 		margin: 0 0 1.5rem;
+	}
+	.usage {
+		background: #1a1e27;
+		border: 1px solid #2a303c;
+		border-radius: 12px;
+		padding: 0.75rem 0.9rem;
+		margin-bottom: 1.25rem;
+		font-size: 0.85rem;
+	}
+	.usage.over {
+		border-color: #b45309;
+	}
+	.usage-top {
+		display: flex;
+		justify-content: space-between;
+		color: #b7bec9;
+		margin-bottom: 0.4rem;
+	}
+	.usage-val {
+		font-variant-numeric: tabular-nums;
+		color: #e8eaed;
+	}
+	.usage-bar {
+		height: 7px;
+		background: #12151c;
+		border-radius: 4px;
+		overflow: hidden;
+	}
+	.usage-fill {
+		height: 100%;
+		background: linear-gradient(90deg, #22c55e, #7cc6ff);
+		transition: width 0.3s;
+	}
+	.usage.over .usage-fill {
+		background: linear-gradient(90deg, #f59e0b, #ef4444);
+	}
+	.usage-sub {
+		margin-top: 0.35rem;
+		color: #8b93a1;
+		font-size: 0.78rem;
+	}
+	.usage-sub strong {
+		color: #fca5a5;
 	}
 	h2 {
 		font-size: 1rem;

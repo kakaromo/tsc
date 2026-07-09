@@ -6,6 +6,12 @@ import { getZhVoice, getKoVoice } from './voices';
 
 let currentAudio: HTMLAudioElement | null = null;
 
+// 서버가 한도 초과(429)를 알리면 이후 요청은 바로 무료 TTS로 (재요청 안 함)
+let quotaExceeded = false;
+export function isQuotaExceeded() {
+	return quotaExceeded;
+}
+
 // 같은 (text,lang,rate,voice) 요청은 캐시 (Blob URL 재사용)
 const cache = new Map<string, string>();
 
@@ -28,6 +34,11 @@ export async function speak(text: string, opts: SpeakOptions = {}): Promise<void
 	const rate = opts.rate ?? (lang === 'zh' ? 0.9 : 1);
 	stopSpeak();
 
+	// 이미 한도 초과가 확인됐으면 서버 호출 없이 바로 무료 TTS
+	if (quotaExceeded) {
+		await browserSpeak(text, lang, rate, opts);
+		return;
+	}
 	const voice = opts.voice ?? (lang === 'ko' ? getKoVoice() : getZhVoice());
 	try {
 		const url = await getAudioUrl(text, lang, rate, voice);
@@ -51,6 +62,10 @@ async function getAudioUrl(
 	const res = await fetch(
 		`/api/tts?text=${encodeURIComponent(text)}&lang=${lang}&rate=${rate}&voice=${encodeURIComponent(voice)}`
 	);
+	if (res.status === 429) {
+		quotaExceeded = true; // 이후엔 서버 호출 없이 무료 TTS
+		throw new Error('tts quota exceeded');
+	}
 	if (!res.ok) throw new Error(`tts ${res.status}`);
 	const blob = await res.blob();
 	const objUrl = URL.createObjectURL(blob);

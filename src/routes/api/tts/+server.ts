@@ -2,6 +2,7 @@ import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import * as sdk from 'microsoft-cognitiveservices-speech-sdk';
+import { billableChars, getUsage, addUsage, isOverLimit } from '$lib/server/ttsUsage';
 
 // GET /api/tts?text=...&lang=zh|ko&rate=0.9
 // Azure Neural TTS로 성우급 음성(MP3)을 생성해 반환.
@@ -41,8 +42,19 @@ export const GET: RequestHandler = async ({ url }) => {
 	if (!text) throw error(400, 'text가 필요합니다.');
 	if (text.length > 600) throw error(400, '텍스트가 너무 깁니다.');
 
+	// 사용량 한도 확인 — 초과 시 429로 거부 → 클라이언트가 무료 TTS로 폴백
+	const used = await getUsage();
+	if (isOverLimit(used)) {
+		return new Response(JSON.stringify({ error: 'quota_exceeded' }), {
+			status: 429,
+			headers: { 'content-type': 'application/json' }
+		});
+	}
+
 	try {
 		const audio = await synth(key, region, text, voice, localeName, rate);
+		// 성공 시 사용량 누적 (비동기 실패해도 재생엔 영향 없음)
+		void addUsage(billableChars(text));
 		return new Response(new Uint8Array(audio), {
 			headers: {
 				'content-type': 'audio/mpeg',

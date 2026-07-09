@@ -23,6 +23,7 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
+		"@upstash/redis": "^1.38.0",
 		"microsoft-cognitiveservices-speech-sdk": "^1.50.0"
 	}
 }
