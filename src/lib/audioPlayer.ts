@@ -2,7 +2,7 @@
 // Azure Neural TTS(성우급) 기반 — lib/tts.ts의 speak()로 재생하고,
 // 실패 시 자동으로 브라우저 TTS로 폴백된다.
 
-import { speak, stopSpeak } from './tts';
+import { speak, stopSpeak, prefetch } from './tts';
 
 export interface Segment {
 	text: string;
@@ -36,9 +36,17 @@ export class AudioPlayer {
 		while (!this.stopped && this.idx < this.queue.length) {
 			const seg = this.queue[this.idx];
 			this.onState(true, this.idx);
+			// 다음 세그먼트를 미리 받아둠 → 재생 사이 네트워크 딜레이 제거
+			const next = this.queue[this.idx + 1];
+			if (next) {
+				void prefetch(
+					next.text,
+					next.lang.startsWith('zh') ? 'zh' : 'ko',
+					next.rate ?? (next.lang.startsWith('zh') ? 0.9 : 1.15)
+				);
+			}
 			await speak(seg.text, {
 				lang: seg.lang.startsWith('zh') ? 'zh' : 'ko',
-				// 중국어는 또박또박(0.9), 한국어 설명은 조금 빠르게(1.15)
 				rate: seg.rate ?? (seg.lang.startsWith('zh') ? 0.9 : 1.15)
 			});
 			if (this.stopped) return;

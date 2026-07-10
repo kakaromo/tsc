@@ -3,15 +3,17 @@
 	import { vocabGroups } from '$lib/vocab';
 	import { grammarPoints } from '$lib/grammar';
 	import { AudioPlayer, type Segment } from '$lib/audioPlayer';
+	import { unlockAudio } from '$lib/tts';
 
 	type Content = 'vocab' | 'grammar';
 	let content = $state<Content>('vocab');
 	let playing = $state(false);
 	let curIndex = $state(0);
 	let repeat = $state(true); // 끝나면 처음부터 반복
-	let pauseSec = $state(2); // 단어 뜻 떠올릴 시간
+	let repeatZh = $state(false); // 단어 모드: 중국어 한 번 더 각인
+	let pauseSec = $state(1); // 단어 뜻 떠올릴 시간(초)
 	let koRate = $state(1.2); // 한국어(설명·뜻) 재생 속도
-	let zhRate = $state(0.9); // 중국어 재생 속도
+	let zhRate = $state(0.95); // 중국어 재생 속도
 
 	const player = new AudioPlayer();
 	player.setOnState((p, i) => {
@@ -35,14 +37,16 @@
 		const labs: string[] = [];
 		for (const g of vocabGroups) {
 			for (const v of g.items) {
-				// 중국어 → (멈춤, 뜻 떠올리기) → 한국어 뜻
+				// 중국어 → (뜻 떠올릴 시간, 사용자 설정) → 한국어 뜻 → 다음 단어
 				segs.push({ text: v.hanzi, lang: 'zh-CN', rate: zhRate, pauseAfterMs: pauseSec * 1000 });
 				labs.push(`${v.hanzi} (${v.pinyin})`);
-				segs.push({ text: v.ko, lang: 'ko-KR', rate: koRate, pauseAfterMs: 400 });
+				segs.push({ text: v.ko, lang: 'ko-KR', rate: koRate, pauseAfterMs: repeatZh ? 250 : 600 });
 				labs.push(`뜻: ${v.ko}`);
-				// 중국어 한 번 더 (각인)
-				segs.push({ text: v.hanzi, lang: 'zh-CN', rate: zhRate, pauseAfterMs: 700 });
-				labs.push(`${v.hanzi} (${v.pinyin})`);
+				// 중국어 한 번 더 (각인) — 옵션
+				if (repeatZh) {
+					segs.push({ text: v.hanzi, lang: 'zh-CN', rate: zhRate, pauseAfterMs: 600 });
+					labs.push(`${v.hanzi} (${v.pinyin})`);
+				}
 			}
 		}
 		return { segs, labs };
@@ -73,6 +77,7 @@
 
 	function start() {
 		manualStop = false;
+		unlockAudio(); // 첫 제스처에 오디오 재생 권한 확보 (iOS 등 연속재생 보장)
 		rebuild();
 		player.play(segments, 0);
 	}
@@ -145,7 +150,10 @@
 		{#if content === 'vocab'}
 			<label class="opt slider">
 				<span>⏳ 뜸 들이는 시간: {pauseSec}초</span>
-				<input type="range" min="0" max="5" step="1" bind:value={pauseSec} onchange={rebuild} />
+				<input type="range" min="0" max="4" step="0.5" bind:value={pauseSec} onchange={rebuild} />
+			</label>
+			<label class="opt">
+				<input type="checkbox" bind:checked={repeatZh} onchange={rebuild} /> 중국어 한 번 더 (각인)
 			</label>
 		{/if}
 	</div>

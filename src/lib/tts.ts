@@ -4,7 +4,29 @@
 
 import { getZhVoice, getKoVoice } from './voices';
 
+// 단일 Audio 객체를 재사용한다. (iOS 등에서 새 Audio마다 제스처를 요구하는 문제 회피 —
+// 첫 재생 시 얻은 권한이 같은 객체에 유지되어 연속 재생이 끊기지 않음)
 let currentAudio: HTMLAudioElement | null = null;
+function getAudioEl(): HTMLAudioElement {
+	if (!currentAudio) currentAudio = new Audio();
+	return currentAudio;
+}
+
+// 첫 사용자 제스처(재생 버튼) 시 호출해 오디오 재생 권한을 '해제'해 둔다.
+export function unlockAudio() {
+	try {
+		const a = getAudioEl();
+		a.muted = true;
+		void a.play().then(() => {
+			a.pause();
+			a.muted = false;
+		}).catch(() => {
+			a.muted = false;
+		});
+	} catch {
+		/* 무시 */
+	}
+}
 
 // 서버가 한도 초과(429)를 알리면 이후 요청은 바로 무료 TTS로 (재요청 안 함)
 let quotaExceeded = false;
@@ -75,19 +97,47 @@ async function getAudioUrl(
 
 function playUrl(url: string, opts: SpeakOptions): Promise<void> {
 	return new Promise((resolve, reject) => {
-		const audio = new Audio(url);
-		currentAudio = audio;
+		const audio = getAudioEl();
+		let done = false;
+		const finish = (ok: boolean) => {
+			if (done) return;
+			done = true;
+			clearTimeout(safety);
+			audio.onended = null;
+			audio.onerror = null;
+			audio.onloadedmetadata = null;
+			if (ok) {
+				opts.onend?.();
+				resolve();
+			} else {
+				opts.onerror?.();
+				reject(new Error('audio error'));
+			}
+		};
+		// 안전장치: onended가 안 불려도 (duration+2초) 뒤엔 강제로 넘어감
+		let safety = setTimeout(() => finish(true), 15000);
+		audio.onloadedmetadata = () => {
+			clearTimeout(safety);
+			const ms = Number.isFinite(audio.duration) ? audio.duration * 1000 + 2000 : 15000;
+			safety = setTimeout(() => finish(true), ms);
+		};
+		audio.onended = () => finish(true);
+		audio.onerror = () => finish(false);
 		opts.onstart?.();
-		audio.onended = () => {
-			opts.onend?.();
-			resolve();
-		};
-		audio.onerror = () => {
-			opts.onerror?.();
-			reject(new Error('audio error'));
-		};
-		audio.play().catch(reject);
+		audio.src = url;
+		audio.play().catch(() => finish(false));
 	});
+}
+
+// 다음 세그먼트 오디오를 미리 받아둠 (재생 딜레이 제거). 실패는 무시.
+export async function prefetch(text: string, lang: 'zh' | 'ko', rate: number, voice?: string) {
+	if (quotaExceeded) return;
+	const v = voice ?? (lang === 'ko' ? getKoVoice() : getZhVoice());
+	try {
+		await getAudioUrl(text, lang, rate, v);
+	} catch {
+		/* 무시 */
+	}
 }
 
 function browserSpeak(
@@ -128,11 +178,12 @@ function browserSpeak(
 }
 
 export function stopSpeak() {
+	// 객체는 유지(재생 권한 보존), 재생만 멈추고 핸들러 제거
 	if (currentAudio) {
-		currentAudio.pause();
 		currentAudio.onended = null;
 		currentAudio.onerror = null;
-		currentAudio = null;
+		currentAudio.onloadedmetadata = null;
+		currentAudio.pause();
 	}
 	if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
 }
