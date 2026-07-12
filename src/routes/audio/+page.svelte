@@ -88,6 +88,20 @@
 	// 항목(단어·문장·문법) 시작 세그먼트 index — 건너뛰기 단위
 	let itemStarts = $state<number[]>([]);
 
+	// 항목별 상세 텍스트 (화면으로 따라 읽는 용도 — 중국어·병음·한국어·설명)
+	interface DetailLine {
+		cn?: string;
+		pinyin?: string;
+		ko?: string;
+		note?: string;
+	}
+	interface ItemDetail {
+		tag: string; // 항목 종류 (카테고리·部分 라벨)
+		title?: string;
+		lines: DetailLine[];
+	}
+	let details = $state<ItemDetail[]>([]);
+
 	function shuffled<T>(arr: T[]): T[] {
 		const a = [...arr];
 		for (let i = a.length - 1; i > 0; i--) {
@@ -97,17 +111,24 @@
 		return a;
 	}
 
-	function buildVocab(): { segs: Segment[]; labs: string[]; starts: number[] } {
+	type Built = { segs: Segment[]; labs: string[]; starts: number[]; dets: ItemDetail[] };
+
+	function buildVocab(): Built {
 		const segs: Segment[] = [];
 		const labs: string[] = [];
 		const starts: number[] = [];
+		const dets: ItemDetail[] = [];
 		const groups = selectedGroups.length
 			? vocabGroups.filter((g) => selectedGroups.includes(g.title))
 			: vocabGroups;
-		let items = groups.flatMap((g) => g.items);
+		let items = groups.flatMap((g) => g.items.map((v) => ({ ...v, group: g.title })));
 		if (shuffle) items = shuffled(items);
 		for (const v of items) {
 			starts.push(segs.length);
+			dets.push({
+				tag: v.group,
+				lines: [{ cn: v.hanzi, pinyin: v.pinyin, ko: v.ko, note: v.note }]
+			});
 			if (direction === 'zh') {
 				// 중국어 → (뜻 떠올릴 시간) → 한국어 뜻
 				segs.push({ text: v.hanzi, lang: 'zh-CN', rate: zhRate, pauseAfterMs: pauseSec * 1000 });
@@ -127,36 +148,57 @@
 				labs.push(`${v.hanzi} (${v.pinyin})`);
 			}
 		}
-		return { segs, labs, starts };
+		return { segs, labs, starts, dets };
 	}
 
-	function buildSentence(): { segs: Segment[]; labs: string[]; starts: number[] } {
+	function buildSentence(): Built {
 		const segs: Segment[] = [];
 		const labs: string[] = [];
 		const starts: number[] = [];
+		const dets: ItemDetail[] = [];
 		type Block = { build: () => void };
 		const blocks: Block[] = [];
 
-		// 1부: 질문 → (답 떠올릴 시간) → 모범답변 → 한국어 뜻
-		for (const q of questions.filter((q) => q.section === 1)) {
-			blocks.push({
-				build: () => {
-					starts.push(segs.length);
-					segs.push({ text: q.prompt, lang: 'zh-CN', rate: zhRate, pauseAfterMs: pauseSec * 1000 });
-					labs.push(`Q. ${q.prompt}`);
-					segs.push({ text: q.sample, lang: 'zh-CN', rate: zhRate, pauseAfterMs: 300 });
-					labs.push(q.sample);
-					segs.push({ text: q.sampleKo, lang: 'ko-KR', rate: koRate, pauseAfterMs: 900 });
-					labs.push(q.sampleKo);
-				}
-			});
-		}
+		// 1~4부 문항: 질문 → (답 떠올릴 시간) → 모범답변 → 한국어 뜻
+		const qa = (sec: number) => {
+			for (const q of questions.filter((q) => q.section === sec)) {
+				blocks.push({
+					build: () => {
+						starts.push(segs.length);
+						dets.push({
+							tag: q.part,
+							lines: [
+								{ cn: q.prompt, pinyin: q.promptPinyin, ko: q.promptKo },
+								{ cn: q.sample, pinyin: q.samplePinyin, ko: q.sampleKo, note: q.tip }
+							]
+						});
+						segs.push({
+							text: q.prompt,
+							lang: 'zh-CN',
+							rate: zhRate,
+							pauseAfterMs: pauseSec * 1000
+						});
+						labs.push(`Q. ${q.prompt}`);
+						segs.push({ text: q.sample, lang: 'zh-CN', rate: zhRate, pauseAfterMs: 300 });
+						labs.push(q.sample);
+						segs.push({ text: q.sampleKo, lang: 'ko-KR', rate: koRate, pauseAfterMs: 900 });
+						labs.push(q.sampleKo);
+					}
+				});
+			}
+		};
+		qa(1);
+		qa(2);
 		// 2부 핵심 문형: 한국어 뜻 → (중국어 떠올릴 시간) → 중국어
 		for (const p of sentencePuzzles) {
 			const cn = p.tokens.join('');
 			blocks.push({
 				build: () => {
 					starts.push(segs.length);
+					dets.push({
+						tag: '2부 핵심 문형',
+						lines: [{ cn, pinyin: p.pinyin, ko: p.ko, note: p.hint }]
+					});
 					segs.push({ text: p.ko, lang: 'ko-KR', rate: koRate, pauseAfterMs: pauseSec * 1000 });
 					labs.push(p.ko);
 					segs.push({ text: cn, lang: 'zh-CN', rate: zhRate, pauseAfterMs: 700 });
@@ -164,29 +206,30 @@
 				}
 			});
 		}
-		// 2부 그림묘사 모범답변: 중국어 → 한국어 뜻
-		for (const q of questions.filter((q) => q.section === 2)) {
-			blocks.push({
-				build: () => {
-					starts.push(segs.length);
-					segs.push({ text: q.sample, lang: 'zh-CN', rate: zhRate, pauseAfterMs: 400 });
-					labs.push(q.sample);
-					segs.push({ text: q.sampleKo, lang: 'ko-KR', rate: koRate, pauseAfterMs: 900 });
-					labs.push(q.sampleKo);
-				}
-			});
-		}
+		qa(3);
+		qa(4);
 		for (const b of shuffle ? shuffled(blocks) : blocks) b.build();
-		return { segs, labs, starts };
+		return { segs, labs, starts, dets };
 	}
 
-	function buildGrammar(): { segs: Segment[]; labs: string[]; starts: number[] } {
+	function buildGrammar(): Built {
 		const segs: Segment[] = [];
 		const labs: string[] = [];
 		const starts: number[] = [];
+		const dets: ItemDetail[] = [];
 		for (const g of grammarPoints) {
 			if (!g.audioScript) continue;
 			starts.push(segs.length);
+			dets.push({
+				tag: '문법',
+				title: g.title,
+				lines: [
+					{ note: `공식: ${g.formula}` },
+					{ note: g.desc },
+					...g.examples.map((e) => ({ cn: e.cn, pinyin: e.pinyin, ko: e.ko })),
+					...(g.warn ? [{ note: `⚠️ ${g.warn}` }] : [])
+				]
+			});
 			segs.push({ text: g.audioScript, lang: 'ko-KR', rate: koRate, pauseAfterMs: 800 });
 			labs.push(g.title);
 			// 예문 중국어 각인
@@ -195,15 +238,16 @@
 				labs.push(`${e.cn} — ${e.ko}`);
 			}
 		}
-		return { segs, labs, starts };
+		return { segs, labs, starts, dets };
 	}
 
 	function rebuild() {
-		const { segs, labs, starts } =
+		const { segs, labs, starts, dets } =
 			content === 'vocab' ? buildVocab() : content === 'sentence' ? buildSentence() : buildGrammar();
 		segments = segs;
 		labels = labs;
 		itemStarts = starts;
+		details = dets;
 	}
 	rebuild();
 
@@ -363,6 +407,23 @@
 		<button class="restart" onclick={restart}>↺ 처음부터 재생</button>
 	{/if}
 
+	<!-- 현재 항목 상세 (따라 읽기용 — 중국어·병음·한국어) -->
+	{#if details[curItem]}
+		{@const d = details[curItem]}
+		<div class="detail">
+			<div class="detail-tag">{d.tag}</div>
+			{#if d.title}<div class="detail-title">{d.title}</div>{/if}
+			{#each d.lines as line, li (li)}
+				<div class="dline">
+					{#if line.cn}<div class="d-cn">{line.cn}</div>{/if}
+					{#if line.pinyin}<div class="d-py">{line.pinyin}</div>{/if}
+					{#if line.ko}<div class="d-ko">{line.ko}</div>{/if}
+					{#if line.note}<div class="d-note">{line.note}</div>{/if}
+				</div>
+			{/each}
+		</div>
+	{/if}
+
 	<!-- 설정 -->
 	<div class="opts">
 		<label class="opt">
@@ -422,8 +483,9 @@
 	<p class="tip">
 		💡 단어: 중국어↔한국어 순서를 골라 들어요. 「뜻 먼저」는 중국어를 떠올리는 회상 연습이라 암기
 		효과가 더 좋아요.<br />
-		문장: 1부 질문·모범답변, 2부 핵심 문형·그림묘사 답변을 통째로 귀에 익혀요.<br />
-		문법: 각 문법을 설명과 예문으로 팟캐스트처럼 들려줘요.
+		문장: 1~4부 전체 문항의 질문→모범답변과 2부 핵심 문형을 통째로 귀에 익혀요.<br />
+		문법: 각 문법을 설명과 예문으로 팟캐스트처럼 들려줘요.<br />
+		정차 중엔 아래 상세 카드로 중국어·병음·해석을 눈으로 따라 읽으세요.
 	</p>
 
 	<footer>운전 중엔 안전이 최우선! 조작은 정차 시에만 하세요 🚗</footer>
@@ -556,6 +618,52 @@
 		font-size: 0.9rem;
 		cursor: pointer;
 		margin-bottom: 0.75rem;
+	}
+	.detail {
+		background: #1a1e27;
+		border: 1px solid #2a303c;
+		border-radius: 16px;
+		padding: 1rem 1.1rem;
+		margin-bottom: 1rem;
+	}
+	.detail-tag {
+		font-size: 0.75rem;
+		color: #7cc6ff;
+		margin-bottom: 0.35rem;
+	}
+	.detail-title {
+		font-size: 1.05rem;
+		font-weight: 700;
+		margin-bottom: 0.5rem;
+	}
+	.dline {
+		padding: 0.5rem 0;
+	}
+	.dline + .dline {
+		border-top: 1px solid #232936;
+	}
+	.d-cn {
+		font-size: 1.25rem;
+		font-weight: 600;
+		line-height: 1.45;
+	}
+	.d-py {
+		color: #a78bfa;
+		font-size: 0.92rem;
+		line-height: 1.45;
+		margin-top: 0.1rem;
+	}
+	.d-ko {
+		color: #b7bec9;
+		font-size: 0.9rem;
+		line-height: 1.5;
+		margin-top: 0.15rem;
+	}
+	.d-note {
+		color: #8b93a1;
+		font-size: 0.82rem;
+		line-height: 1.5;
+		margin-top: 0.25rem;
 	}
 	.opts {
 		display: flex;
