@@ -7,7 +7,7 @@
 		setZhVoice,
 		setKoVoice
 	} from '$lib/voices';
-	import { speak, stopSpeak } from '$lib/tts';
+	import { speak, stopSpeak, ttsCacheStats, clearTtsCache } from '$lib/tts';
 	import { onMount, onDestroy } from 'svelte';
 
 	let zhSel = $state('');
@@ -24,9 +24,29 @@
 	}
 	let usage = $state<TtsUsage | null>(null);
 
+	// 기기에 저장된 음성 캐시 현황
+	let cacheInfo = $state<{ count: number; bytes: number } | null>(null);
+	let clearing = $state(false);
+
+	async function refreshCache() {
+		cacheInfo = await ttsCacheStats();
+	}
+	async function onClearCache() {
+		if (!confirm('저장된 음성을 모두 지울까요? 다음 재생 때 다시 받아요(무료 한도 사용).')) return;
+		clearing = true;
+		await clearTtsCache();
+		await refreshCache();
+		clearing = false;
+	}
+	function fmtBytes(b: number): string {
+		if (b >= 1024 * 1024) return `${(b / 1024 / 1024).toFixed(1)}MB`;
+		return `${Math.round(b / 1024)}KB`;
+	}
+
 	onMount(async () => {
 		zhSel = getZhVoice();
 		koSel = getKoVoice();
+		void refreshCache();
 		try {
 			const res = await fetch('/api/usage/tts');
 			usage = await res.json();
@@ -88,6 +108,21 @@
 		</div>
 	{/if}
 
+	<!-- 기기에 저장된 음성 (재요청 없이 재생) -->
+	{#if cacheInfo}
+		<div class="cache">
+			<div class="cache-info">
+				💾 저장된 음성 {cacheInfo.count}개 ({fmtBytes(cacheInfo.bytes)})
+				<span class="cache-sub">한 번 받은 음성은 기기에 저장돼 무료 한도를 다시 쓰지 않아요</span>
+			</div>
+			{#if cacheInfo.count > 0}
+				<button class="cache-clear" onclick={onClearCache} disabled={clearing}>
+					{clearing ? '지우는 중…' : '비우기'}
+				</button>
+			{/if}
+		</div>
+	{/if}
+
 	<section>
 		<h2>🇨🇳 중국어 음성</h2>
 		{#each zhVoices as v}
@@ -128,6 +163,37 @@
 		max-width: 520px;
 		margin: 0 auto;
 		padding: 1.5rem 1rem 3rem;
+	}
+	.cache {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		background: #1a1e27;
+		border: 1px solid #2a303c;
+		border-radius: 12px;
+		padding: 0.7rem 0.9rem;
+		margin-bottom: 1rem;
+	}
+	.cache-info {
+		flex: 1;
+		font-size: 0.88rem;
+		color: #b7bec9;
+	}
+	.cache-sub {
+		display: block;
+		font-size: 0.76rem;
+		color: #6b7280;
+		margin-top: 0.15rem;
+	}
+	.cache-clear {
+		background: none;
+		border: 1px solid #2a303c;
+		color: #8b93a1;
+		border-radius: 8px;
+		padding: 0.45rem 0.8rem;
+		font-size: 0.85rem;
+		cursor: pointer;
+		white-space: nowrap;
 	}
 	.back {
 		color: #7cc6ff;
