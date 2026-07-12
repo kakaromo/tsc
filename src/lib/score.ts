@@ -79,3 +79,55 @@ export function scoreComment(score: number): string {
 	if (score >= 60) return '통하긴 하지만 일부 글자가 뭉개졌어요. 또박또박 다시 해볼까요?';
 	return '몇몇 글자가 잘 전달되지 않았어요. 천천히, 성조를 살려서 연습해봐요.';
 }
+
+// ─── 합격권 판정 (Azure 발음평가 해석) ─────────────────
+// Azure 점수를 "중국인이 알아들을 수 있는가 / TSC 3급 발음 기준을 넘는가"로 해석.
+// 정확도(성조 포함)가 전달력의 핵심, 유창성은 시험 인상 점수, 완성도는 문장 완주 여부.
+export interface PassVerdict {
+	grade: 'pass' | 'borderline' | 'risk' | 'fail';
+	title: string;
+	desc: string;
+}
+
+export function passVerdict(a: {
+	accuracy?: number | null;
+	fluency?: number | null;
+	completeness?: number | null;
+}): PassVerdict {
+	const acc = a.accuracy ?? 0;
+	const flu = a.fluency ?? 0;
+	const comp = a.completeness ?? 100;
+	const incomplete =
+		comp < 70 ? ' 다만 문장을 끝까지 말하지 못했어요 — 시험에선 끝까지 말하는 게 중요해요.' : '';
+	if (acc >= 85 && flu >= 75)
+		return {
+			grade: 'pass',
+			title: '✅ 합격권 발음',
+			desc:
+				'중국인이 무리 없이 알아듣는 수준이에요. TSC 3급 발음 기준은 충분히 넘습니다.' +
+				incomplete
+		};
+	if (acc >= 75)
+		return {
+			grade: 'borderline',
+			title: '🟡 합격 경계선',
+			desc:
+				'대부분 알아듣지만 일부 글자는 문맥으로 유추해야 해요. 성조가 깨진 글자만 교정하면 합격권입니다.' +
+				incomplete
+		};
+	if (acc >= 60)
+		return {
+			grade: 'risk',
+			title: '🟠 전달 불안정',
+			desc:
+				'문맥이 없으면 오해할 수 있는 수준이에요. 속도를 늦추고 성조를 과장해서 또박또박 연습하세요.' +
+				incomplete
+		};
+	return {
+		grade: 'fail',
+		title: '🔴 전달 어려움',
+		desc:
+			'지금 발음은 중국인이 알아듣기 어려워요. 모범 발음을 글자 단위로 따라 하며 성조부터 다시 잡아봐요.' +
+			incomplete
+	};
+}

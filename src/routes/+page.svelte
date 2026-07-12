@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { questions } from '$lib/questions';
 	import { checklist } from '$lib/checklist';
-	import { matchScore, markChars, scoreComment, type CharMark } from '$lib/score';
+	import { matchScore, markChars, scoreComment, passVerdict, type CharMark } from '$lib/score';
 	import { WavRecorder } from '$lib/wavRecorder';
 	import { scenes } from '$lib/scenes';
 	import { loadUsage, addUsage, usageDisplay } from '$lib/usage';
@@ -244,6 +244,8 @@
 		audioSeconds?: number;
 	}
 	let azure = $state<AzureScore | null>(null);
+	// 발음평가 점수 → 「중국인이 알아듣는가 / 3급 합격권인가」 판정
+	const verdict = $derived(azure?.configured ? passVerdict(azure) : null);
 	let azureLoading = $state(false);
 	let azureError = $state<string | null>(null);
 
@@ -486,6 +488,16 @@
 							<span class="g-num">{azure.completeness}</span><span class="g-lab">완성도</span>
 						</div>
 					</div>
+
+					<!-- 중국인 청취 기준 합격권 판정 -->
+					{#if verdict}
+						<div class="verdict {verdict.grade}">
+							<div class="v-title">
+								{verdict.title} <span class="v-sub">— 중국인이 알아들을 수 있는가 기준</span>
+							</div>
+							<div class="v-desc">{verdict.desc}</div>
+						</div>
+					{/if}
 
 					<!-- 글자별 발음 점수 -->
 					{#if azure.words && azure.words.length}
@@ -782,6 +794,44 @@
 		flex: 1;
 		min-width: 8.5rem;
 		white-space: nowrap;
+	}
+	.verdict {
+		border-radius: 10px;
+		padding: 0.7rem 0.85rem;
+		margin: 0.75rem 0 0.25rem;
+		border: 1px solid;
+		border-left-width: 5px;
+	}
+	.verdict.pass {
+		border-color: #22c55e;
+		background: rgba(34, 197, 94, 0.08);
+	}
+	.verdict.borderline {
+		border-color: #eab308;
+		background: rgba(234, 179, 8, 0.08);
+	}
+	.verdict.risk {
+		border-color: #f97316;
+		background: rgba(249, 115, 22, 0.08);
+	}
+	.verdict.fail {
+		border-color: #ef4444;
+		background: rgba(239, 68, 68, 0.08);
+	}
+	.v-title {
+		font-weight: 700;
+		font-size: 0.95rem;
+	}
+	.v-sub {
+		font-weight: 400;
+		font-size: 0.78rem;
+		color: #8b93a1;
+	}
+	.v-desc {
+		font-size: 0.85rem;
+		color: #b7bec9;
+		line-height: 1.55;
+		margin-top: 0.3rem;
 	}
 	.rate {
 		display: flex;
