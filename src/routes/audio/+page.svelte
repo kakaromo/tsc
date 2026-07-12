@@ -6,6 +6,7 @@
 	import { sentencePuzzles } from '$lib/sentences';
 	import { AudioPlayer, type Segment } from '$lib/audioPlayer';
 	import { unlockAudio } from '$lib/tts';
+	import { loadSrs } from '$lib/gameLogic';
 
 	type Content = 'vocab' | 'sentence' | 'grammar';
 	const OPTS_KEY = 'audio-opts';
@@ -33,8 +34,13 @@
 	let zhRate = $state((savedOpts.zhRate as number) ?? 0.95); // 중국어 재생 속도
 	let direction = $state<'zh' | 'ko'>((savedOpts.direction as 'zh' | 'ko') ?? 'zh'); // 단어: 먼저 들려줄 언어
 	let shuffle = $state((savedOpts.shuffle as boolean) ?? false); // 순서 섞기
+	let weakOnly = $state((savedOpts.weakOnly as boolean) ?? false); // 약한 단어만 (게임 SRS 연동)
 	// 단어 카테고리 선택 (비어있으면 전체)
 	let selectedGroups = $state<string[]>((savedOpts.groups as string[]) ?? []);
+
+	// 게임(퀴즈·플래시카드)에서 쌓인 숙련도 — 박스 4 미만이면 아직 약한 단어
+	const srs = loadSrs();
+	const isWeak = (hanzi: string) => (srs[hanzi] ?? 0) < 4;
 
 	// 마지막 재생 위치 (콘텐츠별, 이어듣기용)
 	let positions = $state<Record<string, number>>(loadJSON<Record<string, number>>(POS_KEY) ?? {});
@@ -50,6 +56,7 @@
 			zhRate,
 			direction,
 			shuffle,
+			weakOnly,
 			groups: selectedGroups
 		};
 		try {
@@ -122,6 +129,7 @@
 			? vocabGroups.filter((g) => selectedGroups.includes(g.title))
 			: vocabGroups;
 		let items = groups.flatMap((g) => g.items.map((v) => ({ ...v, group: g.title })));
+		if (weakOnly) items = items.filter((v) => isWeak(v.hanzi));
 		if (shuffle) items = shuffled(items);
 		for (const v of items) {
 			starts.push(segs.length);
@@ -362,6 +370,14 @@
 	const contentName = $derived(
 		content === 'vocab' ? '단어 학습' : content === 'sentence' ? '문장 학습' : '문법 설명'
 	);
+	// 선택된 카테고리 기준 약한 단어 수 / 전체 수
+	const weakStat = $derived.by(() => {
+		const groups = selectedGroups.length
+			? vocabGroups.filter((g) => selectedGroups.includes(g.title))
+			: vocabGroups;
+		const items = groups.flatMap((g) => g.items);
+		return { weak: items.filter((v) => isWeak(v.hanzi)).length, total: items.length };
+	});
 </script>
 
 <svelte:head><title>오디오 학습 (운전용) · TSC 3급</title></svelte:head>
@@ -463,6 +479,13 @@
 				<input type="checkbox" bind:checked={repeatZh} onchange={optChanged} /> 중국어 한 번 더
 				(각인)
 			</label>
+			<label class="opt">
+				<input type="checkbox" bind:checked={weakOnly} onchange={optChanged} />
+				⚠️ 약한 단어만 ({weakStat.weak}/{weakStat.total}개 — 게임에서 익힌 단어 제외)
+			</label>
+			{#if weakOnly && weakStat.weak === 0}
+				<p class="all-mastered">🎉 이 범위는 전부 마스터했어요! 다른 카테고리를 선택해 보세요.</p>
+			{/if}
 			<div class="opt chips-wrap">
 				<span>카테고리 {selectedGroups.length ? `(${selectedGroups.length}개 선택)` : '(전체)'}</span>
 				<div class="chips">
@@ -725,6 +748,11 @@
 		background: #2563eb;
 		border-color: #2563eb;
 		color: #fff;
+	}
+	.all-mastered {
+		margin: 0;
+		font-size: 0.85rem;
+		color: #4ade80;
 	}
 	.tip {
 		color: #8b93a1;
