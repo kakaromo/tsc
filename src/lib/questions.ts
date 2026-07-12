@@ -58,10 +58,11 @@ export const questions: Question[] = [
 		prompt: '你家有几口人？',
 		promptPinyin: 'Nǐ jiā yǒu jǐ kǒu rén?',
 		promptKo: '가족이 몇 명입니까?',
-		sample: '我家有三口人，爸爸、妈妈和我。现在我一个人住。',
-		samplePinyin: 'Wǒ jiā yǒu sān kǒu rén, bàba, māma hé wǒ. Xiànzài wǒ yí ge rén zhù.',
-		sampleKo: '저희 가족은 세 명이고, 아빠, 엄마 그리고 저입니다. 지금은 혼자 살고 있습니다.',
-		tip: '一个人(yí ge rén)의 一는 2성(yí)으로 변조',
+		sample: '我家有三口人，爸爸、妈妈和我。',
+		samplePinyin: 'Wǒ jiā yǒu sān kǒu rén, bàba, māma hé wǒ.',
+		sampleKo: '저희 가족은 세 명이고, 아빠, 엄마 그리고 저입니다.',
+		scoreTarget: '我家有三口人爸爸妈妈和我',
+		tip: '식구는 양사 口(kǒu)로 셈: 三口人(sān kǒu rén)',
 		prepSec: 3,
 		answerSec: 15
 	},
@@ -86,12 +87,11 @@ export const questions: Question[] = [
 		prompt: '你有什么爱好？',
 		promptPinyin: 'Nǐ yǒu shénme àihào?',
 		promptKo: '취미가 무엇입니까?',
-		sample: '我的爱好是听音乐和看电影。工作以后，我常常一个人在家看电影，觉得很轻松。',
-		samplePinyin:
-			'Wǒ de àihào shì tīng yīnyuè hé kàn diànyǐng. Gōngzuò yǐhòu, wǒ chángcháng yí ge rén zài jiā kàn diànyǐng, juéde hěn qīngsōng.',
-		sampleKo:
-			'제 취미는 음악 감상과 영화 보기입니다. 퇴근 후에 자주 혼자 집에서 영화를 보는데, 아주 편안하다고 느낍니다.',
-		tip: '爱好(àihào) 4성+4성, 轻松(qīngsōng) 1성+1성',
+		sample: '我的爱好是看电影。我常常在家看电影。',
+		samplePinyin: 'Wǒ de àihào shì kàn diànyǐng. Wǒ chángcháng zài jiā kàn diànyǐng.',
+		sampleKo: '제 취미는 영화 보기입니다. 저는 자주 집에서 영화를 봅니다.',
+		scoreTarget: '我的爱好是看电影我常常在家看电影',
+		tip: '爱好(àihào) 4성+4성. 常常(chángcháng, 자주)은 동사 앞에',
 		prepSec: 3,
 		answerSec: 15
 	},
@@ -103,13 +103,13 @@ export const questions: Question[] = [
 		promptPinyin: 'Qǐng jiǎndān jièshào yíxià nǐ zìjǐ.',
 		promptKo: '간단히 자기소개를 해보세요.',
 		sample:
-			'你好，我叫金松炫。我的生日是九月三号。我家有三口人，爸爸、妈妈和我，现在我一个人住。我在一家公司工作。我的爱好是听音乐和看电影。谢谢。',
+			'你好，我叫金松炫。我的生日是九月三号。我家有三口人，爸爸、妈妈和我。我在一家公司工作。我的爱好是看电影。谢谢。',
 		scoreTarget:
-			'我叫金松炫我的生日是九月三号我家有三口人爸爸妈妈和我现在我一个人住我在一家公司工作我的爱好是听音乐和看电影',
+			'我叫金松炫我的生日是九月三号我家有三口人爸爸妈妈和我我在一家公司工作我的爱好是看电影',
 		samplePinyin:
-			'Nǐ hǎo, wǒ jiào Jīn Sōng Xuàn. Wǒ de shēngrì shì jiǔ yuè sān hào. Wǒ jiā yǒu sān kǒu rén, bàba, māma hé wǒ, xiànzài wǒ yí ge rén zhù. Wǒ zài yì jiā gōngsī gōngzuò. Wǒ de àihào shì tīng yīnyuè hé kàn diànyǐng. Xièxie.',
+			'Nǐ hǎo, wǒ jiào Jīn Sōng Xuàn. Wǒ de shēngrì shì jiǔ yuè sān hào. Wǒ jiā yǒu sān kǒu rén, bàba, māma hé wǒ. Wǒ zài yì jiā gōngsī gōngzuò. Wǒ de àihào shì kàn diànyǐng. Xièxie.',
 		sampleKo:
-			'안녕하세요, 저는 김송현입니다. 생일은 9월 3일입니다. 저희 가족은 세 명이고 아빠, 엄마 그리고 저인데, 지금은 혼자 삽니다. 저는 회사에 다닙니다. 제 취미는 음악 감상과 영화 보기입니다. 감사합니다.',
+			'안녕하세요, 저는 김송현입니다. 생일은 9월 3일입니다. 저희 가족은 세 명이고 아빠, 엄마 그리고 저입니다. 저는 한 회사에서 일합니다. 제 취미는 영화 보기입니다. 감사합니다.',
 		tip: '문장 사이를 너무 붙이지 말고 또박또박. 끝은 차분하게 내려서 마무리',
 		prepSec: 10,
 		answerSec: 40
