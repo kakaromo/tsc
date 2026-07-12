@@ -5,7 +5,7 @@
 	import { WavRecorder } from '$lib/wavRecorder';
 	import { scenes } from '$lib/scenes';
 	import { loadUsage, addUsage, usageDisplay } from '$lib/usage';
-	import { speak } from '$lib/tts';
+	import { speak, stopSpeak, unlockAudio } from '$lib/tts';
 	import { onMount } from 'svelte';
 
 	// ─── 상태 ───────────────────────────────────────────
@@ -17,7 +17,7 @@
 	const q = $derived(questions[index]);
 
 	// ─── 타이머 ─────────────────────────────────────────
-	type Phase = 'idle' | 'prep' | 'answer' | 'done';
+	type Phase = 'idle' | 'question' | 'prep' | 'answer' | 'done';
 	let phase = $state<Phase>('idle');
 	let remaining = $state(0);
 	let timerId: ReturnType<typeof setInterval> | null = null;
@@ -42,11 +42,27 @@
 		}
 	}
 
-	function startPrep() {
+	// 실제 시험처럼: 질문 음성 재생 → 준비 시간 → 답변(녹음)
+	async function startPrep() {
 		clearTimer();
+		unlockAudio(); // iOS 등에서 이어지는 자동 재생 권한 확보
+		phase = 'question';
+		remaining = 0;
+		await speakPrompt();
+		if (phase !== 'question') return; // 재생 중 리셋/문항 이동함
 		phase = 'prep';
 		remaining = q.prepSec;
 		timerId = setInterval(tick, 1000);
+	}
+
+	// 질문(중국어) 음성 재생. 재생이 끝날 때 resolve.
+	async function speakPrompt() {
+		isSpeaking = true;
+		try {
+			await speak(q.prompt, { lang: 'zh', rate: speechRate });
+		} finally {
+			isSpeaking = false;
+		}
 	}
 
 	function startAnswer() {
@@ -62,6 +78,8 @@
 		clearTimer();
 		phase = 'idle';
 		remaining = 0;
+		stopSpeak();
+		isSpeaking = false;
 		stopRecording();
 		stopRecognition();
 	}
@@ -325,13 +343,15 @@
 	}
 
 	const phaseLabel = $derived(
-		phase === 'prep'
-			? '준비 시간'
-			: phase === 'answer'
-				? '답변 시간 (녹음 중)'
-				: phase === 'done'
-					? '완료'
-					: '대기'
+		phase === 'question'
+			? '질문 듣는 중…'
+			: phase === 'prep'
+				? '준비 시간'
+				: phase === 'answer'
+					? '답변 시간 (녹음 중)'
+					: phase === 'done'
+						? '완료'
+						: '대기'
 	);
 </script>
 
@@ -397,20 +417,26 @@
 		<!-- 타이머 -->
 		<div
 			class="timer"
-			class:active={phase === 'prep' || phase === 'answer'}
+			class:active={phase === 'question' || phase === 'prep' || phase === 'answer'}
 			class:answer={phase === 'answer'}
 		>
 			<div class="phase-label">{phaseLabel}</div>
-			<div class="time">{fmt(remaining)}</div>
-			<div class="hint">준비 {q.prepSec}초 · 답변 {q.answerSec}초</div>
+			<div class="time">{phase === 'question' ? '🔊' : fmt(remaining)}</div>
+			<div class="hint">질문 듣기 → 준비 {q.prepSec}초 → 답변 {q.answerSec}초</div>
 		</div>
 
 		<div class="controls">
 			{#if phase === 'idle' || phase === 'done'}
-				<button class="primary" onclick={startPrep}>▶ 시작 (준비 → 답변)</button>
+				<button class="primary" onclick={startPrep}>▶ 시작 (질문 → 준비 → 답변)</button>
 			{:else}
 				<button class="warn" onclick={stopAnswer}>■ 중지</button>
 			{/if}
+			<button
+				onclick={() => speakPrompt()}
+				disabled={isSpeaking || phase === 'answer' || !ttsSupported}
+			>
+				❓ 질문 듣기
+			</button>
 			<button onclick={speak_} disabled={isSpeaking || !ttsSupported}>
 				🔊 {isSpeaking ? '재생 중…' : '모범 발음 듣기'}
 			</button>
@@ -748,11 +774,14 @@
 	}
 	.controls {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 0.5rem;
 		margin-bottom: 0.75rem;
 	}
 	.controls button {
 		flex: 1;
+		min-width: 8.5rem;
+		white-space: nowrap;
 	}
 	.rate {
 		display: flex;
