@@ -37,6 +37,16 @@
 	let weakOnly = $state((savedOpts.weakOnly as boolean) ?? false); // 약한 단어만 (게임 SRS 연동)
 	// 단어 카테고리 선택 (비어있으면 전체)
 	let selectedGroups = $state<string[]>((savedOpts.groups as string[]) ?? []);
+	// 문장 모드: 부분(部分) 선택 (비어있으면 전체)
+	let sentParts = $state<string[]>((savedOpts.sentParts as string[]) ?? []);
+	const PART_CHIPS = [
+		{ key: '1', label: '1부 자기소개' },
+		{ key: '2', label: '2부 그림' },
+		{ key: 'pattern', label: '2부 핵심 문형' },
+		{ key: '3', label: '3부 대화' },
+		{ key: '4', label: '4부 화제' }
+	];
+	const partOn = (key: string) => sentParts.length === 0 || sentParts.includes(key);
 
 	// 게임(퀴즈·플래시카드)에서 쌓인 숙련도 — 박스 4 미만이면 아직 약한 단어
 	const srs = loadSrs();
@@ -57,7 +67,8 @@
 			direction,
 			shuffle,
 			weakOnly,
-			groups: selectedGroups
+			groups: selectedGroups,
+			sentParts
 		};
 		try {
 			localStorage.setItem(OPTS_KEY, JSON.stringify(opts));
@@ -195,27 +206,29 @@
 				});
 			}
 		};
-		qa(1);
-		qa(2);
+		if (partOn('1')) qa(1);
+		if (partOn('2')) qa(2);
 		// 2부 핵심 문형: 한국어 뜻 → (중국어 떠올릴 시간) → 중국어
-		for (const p of sentencePuzzles) {
-			const cn = p.tokens.join('');
-			blocks.push({
-				build: () => {
-					starts.push(segs.length);
-					dets.push({
-						tag: '2부 핵심 문형',
-						lines: [{ cn, pinyin: p.pinyin, ko: p.ko, note: p.hint }]
-					});
-					segs.push({ text: p.ko, lang: 'ko-KR', rate: koRate, pauseAfterMs: pauseSec * 1000 });
-					labs.push(p.ko);
-					segs.push({ text: cn, lang: 'zh-CN', rate: zhRate, pauseAfterMs: 700 });
-					labs.push(`${cn} (${p.pinyin})`);
-				}
-			});
+		if (partOn('pattern')) {
+			for (const p of sentencePuzzles) {
+				const cn = p.tokens.join('');
+				blocks.push({
+					build: () => {
+						starts.push(segs.length);
+						dets.push({
+							tag: '2부 핵심 문형',
+							lines: [{ cn, pinyin: p.pinyin, ko: p.ko, note: p.hint }]
+						});
+						segs.push({ text: p.ko, lang: 'ko-KR', rate: koRate, pauseAfterMs: pauseSec * 1000 });
+						labs.push(p.ko);
+						segs.push({ text: cn, lang: 'zh-CN', rate: zhRate, pauseAfterMs: 700 });
+						labs.push(`${cn} (${p.pinyin})`);
+					}
+				});
+			}
 		}
-		qa(3);
-		qa(4);
+		if (partOn('3')) qa(3);
+		if (partOn('4')) qa(4);
 		for (const b of shuffle ? shuffled(blocks) : blocks) b.build();
 		return { segs, labs, starts, dets };
 	}
@@ -299,6 +312,12 @@
 		selectedGroups = selectedGroups.includes(title)
 			? selectedGroups.filter((t) => t !== title)
 			: [...selectedGroups, title];
+		optChanged();
+	}
+	function togglePart(key: string) {
+		sentParts = sentParts.includes(key)
+			? sentParts.filter((k) => k !== key)
+			: [...sentParts, key];
 		optChanged();
 	}
 
@@ -462,6 +481,22 @@
 				<span>⏳ 떠올릴 시간: {pauseSec}초</span>
 				<input type="range" min="0" max="4" step="0.5" bind:value={pauseSec} onchange={rebuild} />
 			</label>
+		{/if}
+		{#if content === 'sentence'}
+			<div class="opt chips-wrap">
+				<span>부분 선택 {sentParts.length ? `(${sentParts.length}개 선택)` : '(전체)'}</span>
+				<div class="chips">
+					{#each PART_CHIPS as p (p.key)}
+						<button
+							class="chip"
+							class:on={sentParts.includes(p.key)}
+							onclick={() => togglePart(p.key)}
+						>
+							{p.label}
+						</button>
+					{/each}
+				</div>
+			</div>
 		{/if}
 		{#if content === 'vocab'}
 			<div class="opt seg">
