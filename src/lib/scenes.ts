@@ -197,6 +197,143 @@ const phone = wrap(`
   <path d="M195 52 q14 12 0 32" stroke="${accent}" />
 `);
 
+// 公园里有两只狗 — 강아지 두 마리
+const dog = wrap(`
+  <!-- 땅 -->
+  <line x1="30" y1="165" x2="270" y2="165" />
+  <!-- 나무 -->
+  <line x1="55" y1="165" x2="55" y2="110" />
+  <circle cx="55" cy="90" r="26" />
+  <!-- 강아지 1 -->
+  <ellipse cx="130" cy="145" rx="26" ry="15" stroke="${accent}" />
+  <circle cx="158" cy="135" r="11" stroke="${accent}" />
+  <path d="M152 126 l-2 -8 l7 4 Z" stroke="${accent}" />
+  <path d="M162 125 l3 -8 l4 8 Z" stroke="${accent}" />
+  <path d="M105 140 q-9 -6 -5 -14" stroke="${accent}" />
+  <line x1="118" y1="158" x2="118" y2="165" stroke="${accent}" />
+  <line x1="142" y1="158" x2="142" y2="165" stroke="${accent}" />
+  <!-- 강아지 2 -->
+  <ellipse cx="215" cy="150" rx="22" ry="13" />
+  <circle cx="239" cy="141" r="9" />
+  <path d="M234 133 l-2 -7 l6 3 Z" />
+  <path d="M243 132 l3 -7 l3 7 Z" />
+  <line x1="205" y1="161" x2="205" y2="165" />
+  <line x1="226" y1="161" x2="226" y2="165" />
+`);
+
+// 她在喝咖啡 — 커피 마시기
+const coffee = wrap(`
+  <!-- 사람 -->
+  <circle cx="120" cy="70" r="18" />
+  <path d="M120 88 L120 140" />
+  <path d="M120 105 L150 92" />
+  <path d="M120 140 L106 175" />
+  <path d="M120 140 L134 175" />
+  <!-- 컵 (손 위치) -->
+  <path d="M150 84 l18 0 l-3 18 l-12 0 Z" stroke="${accent}" />
+  <path d="M168 88 q9 2 0 9" stroke="${accent}" />
+  <!-- 김 -->
+  <path d="M155 74 q3 -6 0 -10" stroke="${accent}" />
+  <path d="M162 74 q3 -6 0 -10" stroke="${accent}" />
+  <!-- 테이블 -->
+  <line x1="95" y1="120" x2="200" y2="120" opacity="0.4" />
+`);
+
+// 他在睡觉 — 자는 사람
+const sleep = wrap(`
+  <!-- 침대 -->
+  <rect x="55" y="110" width="190" height="40" rx="6" />
+  <line x1="60" y1="150" x2="60" y2="172" />
+  <line x1="240" y1="150" x2="240" y2="172" />
+  <!-- 베개·머리 -->
+  <rect x="65" y="96" width="42" height="16" rx="6" />
+  <circle cx="90" cy="98" r="14" stroke="${accent}" />
+  <!-- 이불 -->
+  <path d="M110 96 q90 -8 130 14" stroke="${accent}" />
+  <!-- Zzz -->
+  <text x="150" y="60" font-size="22" fill="${stroke}" stroke="none" font-family="sans-serif">Z</text>
+  <text x="170" y="45" font-size="16" fill="${stroke}" stroke="none" font-family="sans-serif">z</text>
+  <text x="185" y="34" font-size="12" fill="${stroke}" stroke="none" font-family="sans-serif">z</text>
+`);
+
+// 今天下雪，很冷 — 눈 오는 날
+const snow = wrap(`
+  <!-- 구름 -->
+  <path d="M90 55 q-25 0 -25 22 q0 18 22 18 h70 q26 0 26 -24 q0 -22 -26 -22 q-4 -20 -30 -20 q-30 0 -37 26" />
+  <!-- 눈송이 -->
+  <circle cx="90" cy="112" r="4" stroke="${accent}" />
+  <circle cx="120" cy="128" r="4" stroke="${accent}" />
+  <circle cx="150" cy="112" r="4" stroke="${accent}" />
+  <circle cx="180" cy="130" r="4" stroke="${accent}" />
+  <circle cx="210" cy="115" r="4" stroke="${accent}" />
+  <!-- 쌓인 눈 -->
+  <path d="M40 170 q40 -14 80 0 q40 14 80 0 q30 -10 60 0" />
+`);
+
+// 现在七点半 — 벽시계 7시 30분
+const halftime = wrap(`
+  <circle cx="150" cy="100" r="60" />
+  <line x1="150" y1="45" x2="150" y2="55" />
+  <line x1="205" y1="100" x2="195" y2="100" />
+  <line x1="150" y1="155" x2="150" y2="145" />
+  <line x1="95" y1="100" x2="105" y2="100" />
+  <!-- 시침: 7과 8 사이 -->
+  <line x1="150" y1="100" x2="122" y2="128" stroke="${accent}" stroke-width="5" />
+  <!-- 분침: 6 (30분) -->
+  <line x1="150" y1="100" x2="150" y2="142" stroke="${accent}" />
+  <circle cx="150" cy="100" r="3" fill="${accent}" stroke="none" />
+`);
+
+// 她买了一件衣服 — 옷 사기
+const clothes = wrap(`
+  <!-- 옷걸이 봉 -->
+  <line x1="60" y1="50" x2="240" y2="50" />
+  <!-- 옷걸이 + 셔츠 -->
+  <path d="M150 55 l0 8" stroke="${accent}" />
+  <path d="M120 78 l30 -15 l30 15 l-8 12 l0 55 l-44 0 l0 -55 Z" stroke="${accent}" />
+  <path d="M120 78 l-10 18 l14 8" stroke="${accent}" />
+  <path d="M180 78 l10 18 l-14 8" stroke="${accent}" />
+  <!-- 가격표 -->
+  <rect x="205" y="120" width="45" height="28" rx="4" />
+  <line x1="205" y1="120" x2="196" y2="108" />
+`);
+
+// 他们在踢足球 — 축구
+const soccer = wrap(`
+  <!-- 사람 1 (차는 자세) -->
+  <circle cx="100" cy="65" r="14" />
+  <path d="M100 79 L100 125" />
+  <path d="M100 92 L80 108" />
+  <path d="M100 92 L122 100" />
+  <path d="M100 125 L85 165" />
+  <path d="M100 125 L130 148" stroke="${accent}" />
+  <!-- 공 -->
+  <circle cx="150" cy="155" r="13" stroke="${accent}" />
+  <path d="M144 150 l12 0 l-6 10 Z" stroke="${accent}" />
+  <!-- 사람 2 -->
+  <circle cx="215" cy="70" r="14" />
+  <path d="M215 84 L215 130" />
+  <path d="M215 96 L196 112" />
+  <path d="M215 96 L234 112" />
+  <path d="M215 130 L202 168" />
+  <path d="M215 130 L228 168" />
+`);
+
+// 床上有一只猫 — 침대 위 고양이
+const bedcat = wrap(`
+  <!-- 침대 -->
+  <rect x="55" y="120" width="190" height="35" rx="6" />
+  <line x1="60" y1="155" x2="60" y2="175" />
+  <line x1="240" y1="155" x2="240" y2="175" />
+  <rect x="63" y="106" width="40" height="14" rx="6" />
+  <!-- 고양이 (침대 위) -->
+  <ellipse cx="170" cy="108" rx="26" ry="14" stroke="${accent}" />
+  <circle cx="198" cy="99" r="11" stroke="${accent}" />
+  <path d="M192 90 l-3 -8 l7 4 Z" stroke="${accent}" />
+  <path d="M202 89 l3 -8 l4 8 Z" stroke="${accent}" />
+  <path d="M144 104 q-10 4 -6 12" stroke="${accent}" />
+`);
+
 export const scenes: Record<string, string> = {
 	'p2-book': book,
 	'p2-study': study,
@@ -209,5 +346,13 @@ export const scenes: Record<string, string> = {
 	'p2-tv': tv,
 	'p2-people': people,
 	'p2-bus': bus,
-	'p2-phone': phone
+	'p2-phone': phone,
+	'p2-dog': dog,
+	'p2-coffee': coffee,
+	'p2-sleep': sleep,
+	'p2-snow': snow,
+	'p2-halftime': halftime,
+	'p2-clothes': clothes,
+	'p2-soccer': soccer,
+	'p2-bedcat': bedcat
 };

@@ -56,5 +56,53 @@ export const sentencePuzzles: SentencePuzzle[] = [
 		pinyin: 'Shū zài zhuōzi shàng.',
 		ko: '책이 책상 위에 있다.',
 		hint: '소재문: 사물 + 在 + 장소'
+	},
+	{
+		tokens: ['他', '在', '看', '电视'],
+		pinyin: 'Tā zài kàn diànshì.',
+		ko: '그는 TV를 보고 있다.',
+		hint: '진행: 주어 + 在 + 동사 + 목적어'
+	},
+	{
+		tokens: ['床上', '有', '一只', '猫'],
+		pinyin: 'Chuáng shàng yǒu yì zhī māo.',
+		ko: '침대 위에 고양이 한 마리가 있다.',
+		hint: '존재문 + 동물 양사 只'
+	},
+	{
+		tokens: ['他', '坐', '地铁', '去', '公司'],
+		pinyin: 'Tā zuò dìtiě qù gōngsī.',
+		ko: '그는 지하철을 타고 회사에 간다.',
+		hint: '교통: 坐 + 탈것 + 去 + 장소'
+	},
+	{
+		tokens: ['她', '买了', '一件', '衣服'],
+		pinyin: 'Tā mǎi le yí jiàn yīfu.',
+		ko: '그녀는 옷 한 벌을 샀다.',
+		hint: '완료 了 + 옷 양사 件'
+	},
+	{
+		tokens: ['我', '每天', '七点', '起床'],
+		pinyin: 'Wǒ měitiān qī diǎn qǐchuáng.',
+		ko: '나는 매일 7시에 일어난다.',
+		hint: '시간사(매일·시각)는 동사 앞'
+	},
+	{
+		tokens: ['他们', '在', '踢', '足球'],
+		pinyin: 'Tāmen zài tī zúqiú.',
+		ko: '그들은 축구를 하고 있다.',
+		hint: '진행 在 + 발 운동은 踢'
+	},
+	{
+		tokens: ['猫', '在', '椅子', '下边'],
+		pinyin: 'Māo zài yǐzi xiàbian.',
+		ko: '고양이는 의자 아래에 있다.',
+		hint: '소재문 + 방위사 下边'
+	},
+	{
+		tokens: ['今天', '下雪', '天气', '很冷'],
+		pinyin: 'Jīntiān xià xuě, tiānqì hěn lěng.',
+		ko: '오늘 눈이 와서 날씨가 아주 춥다.',
+		hint: '날씨 + 형용사술어문(很+형용사)'
 	}
 ];

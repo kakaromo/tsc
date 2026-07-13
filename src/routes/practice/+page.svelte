@@ -6,7 +6,7 @@
 	import { scenes } from '$lib/scenes';
 	import { loadUsage, addUsage, usageDisplay } from '$lib/usage';
 	import { speak, stopSpeak, unlockAudio } from '$lib/tts';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 
 	// ─── 상태 ───────────────────────────────────────────
 	let index = $state(0);
@@ -45,6 +45,8 @@
 	// 실제 시험처럼: 질문 음성 재생 → 준비 시간 → 답변(녹음)
 	async function startPrep() {
 		clearTimer();
+		repeating = false; // 반복 듣기 중이었다면 중단
+		stopSpeak();
 		unlockAudio(); // iOS 등에서 이어지는 자동 재생 권한 확보
 		phase = 'question';
 		remaining = 0;
@@ -65,6 +67,43 @@
 		}
 	}
 
+	// 🔁 반복 듣기: 질문 → 모범답변을 멈출 때까지 반복 (귀 암기용)
+	let repeating = $state(false);
+	let repeatToken = 0; // 빠른 온/오프 시 루프 중복 실행 방지
+	async function toggleRepeat() {
+		if (repeating) {
+			repeating = false;
+			stopSpeak();
+			isSpeaking = false;
+			return;
+		}
+		unlockAudio();
+		const token = ++repeatToken;
+		repeating = true;
+		isSpeaking = true;
+		const alive = () => repeating && token === repeatToken;
+		try {
+			while (alive()) {
+				await speak(q.prompt, { lang: 'zh', rate: speechRate });
+				if (!alive()) break;
+				await wait(500);
+				if (!alive()) break;
+				await speak(q.sample, { lang: 'zh', rate: speechRate });
+				if (!alive()) break;
+				await wait(1200);
+			}
+		} finally {
+			if (token === repeatToken) isSpeaking = false;
+		}
+	}
+	function wait(ms: number) {
+		return new Promise((r) => setTimeout(r, ms));
+	}
+	onDestroy(() => {
+		repeating = false;
+		stopSpeak();
+	});
+
 	function startAnswer() {
 		clearTimer();
 		phase = 'answer';
@@ -78,6 +117,7 @@
 		clearTimer();
 		phase = 'idle';
 		remaining = 0;
+		repeating = false;
 		stopSpeak();
 		isSpeaking = false;
 		stopRecording();
@@ -425,7 +465,14 @@
 				❓ 질문 듣기
 			</button>
 			<button onclick={speak_} disabled={isSpeaking || !ttsSupported}>
-				🔊 {isSpeaking ? '재생 중…' : '모범 발음'}
+				🔊 {isSpeaking && !repeating ? '재생 중…' : '모범 발음'}
+			</button>
+			<button
+				class:repeat-on={repeating}
+				onclick={toggleRepeat}
+				disabled={(isSpeaking && !repeating) || phase === 'answer' || !ttsSupported}
+			>
+				{repeating ? '⏹ 반복 끄기' : '🔁 반복 듣기'}
 			</button>
 		</div>
 
@@ -830,6 +877,11 @@
 	.sub-actions button {
 		flex: 1;
 		white-space: nowrap;
+	}
+	.sub-actions button.repeat-on {
+		background: #7c3aed;
+		border-color: #7c3aed;
+		color: #fff;
 	}
 	.verdict {
 		border-radius: 10px;

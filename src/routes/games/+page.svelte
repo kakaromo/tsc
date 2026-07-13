@@ -12,11 +12,30 @@
 		masteryStats,
 		type SrsMap
 	} from '$lib/gameLogic';
-	import type { Vocab } from '$lib/vocab';
+	import { vocabGroups, type Vocab } from '$lib/vocab';
 	import { speak } from '$lib/tts';
 
 	type Mode = 'quiz' | 'flash' | 'order';
 	let mode = $state<Mode>('quiz');
+
+	// ─── 카테고리(유형) 필터 — 비어있으면 전체 ─────────
+	let selCats = $state<string[]>([]);
+	const pool = $derived(
+		selCats.length
+			? vocabGroups.filter((g) => selCats.includes(g.title)).flatMap((g) => g.items)
+			: allWords
+	);
+	function toggleCat(title: string) {
+		selCats = selCats.includes(title)
+			? selCats.filter((t) => t !== title)
+			: [...selCats, title];
+		localStorage.setItem('tsc-game-cats', JSON.stringify(selCats));
+		// 새 범위로 퀴즈·카드 다시 뽑기
+		fDeck = [];
+		fPos = 0;
+		nextQuiz();
+		nextFlash();
+	}
 
 	// ─── 공통: 스트릭 · SRS ────────────────────────────
 	let srs = $state<SrsMap>({});
@@ -28,12 +47,17 @@
 	onMount(() => {
 		srs = loadSrs();
 		best = Number(localStorage.getItem('tsc-best-streak') ?? 0);
+		try {
+			selCats = JSON.parse(localStorage.getItem('tsc-game-cats') ?? '[]');
+		} catch {
+			selCats = [];
+		}
 		nextQuiz();
 		nextFlash();
 		nextOrder();
 	});
 
-	const mastery = $derived(masteryStats(srs, allWords));
+	const mastery = $derived(masteryStats(srs, pool));
 	const accuracy = $derived(totalCount ? Math.round((correctCount / totalCount) * 100) : 0);
 
 	function onCorrect(hanzi: string) {
@@ -66,9 +90,10 @@
 
 	function nextQuiz() {
 		qPicked = null;
-		const w = weightedPick(allWords, srs);
+		const w = weightedPick(pool, srs);
 		qWord = w;
-		qChoices = makeChoices(w, allWords);
+		// 보기(오답)는 범위가 좁으면 전체 단어에서 채움
+		qChoices = makeChoices(w, pool.length >= 4 ? pool : allWords);
 	}
 	function pickQuiz(choice: Vocab) {
 		if (qPicked || !qWord) return;
@@ -91,9 +116,7 @@
 	function nextFlash() {
 		if (fPos >= fDeck.length) {
 			// 덜 익힌 것 위주로 새 덱 구성
-			fDeck = shuffle([...allWords]).sort(
-				(a, b) => (srs[a.hanzi] ?? 0) - (srs[b.hanzi] ?? 0)
-			);
+			fDeck = shuffle([...pool]).sort((a, b) => (srs[a.hanzi] ?? 0) - (srs[b.hanzi] ?? 0));
 			fPos = 0;
 		}
 		fWord = fDeck[fPos++];
@@ -175,6 +198,22 @@
 		<button class:on={mode === 'flash'} onclick={() => (mode = 'flash')}>🔄 카드</button>
 		<button class:on={mode === 'order'} onclick={() => (mode = 'order')}>🧩 순서</button>
 	</div>
+
+	<!-- 단어 유형(카테고리) 선택 — 퀴즈·카드에 적용 -->
+	{#if mode !== 'order'}
+		<div class="cats">
+			<span class="cats-label">
+				유형 {selCats.length ? `(${selCats.length}개 · 단어 ${pool.length}개)` : '(전체)'}
+			</span>
+			<div class="cat-chips">
+				{#each vocabGroups as g (g.title)}
+					<button class="cat" class:on={selCats.includes(g.title)} onclick={() => toggleCat(g.title)}>
+						{g.title}
+					</button>
+				{/each}
+			</div>
+		</div>
+	{/if}
 
 	{#if mode === 'quiz' && qWord}
 		<!-- ❓ 퀴즈 -->
@@ -313,6 +352,34 @@
 		display: flex;
 		gap: 0.4rem;
 		margin-bottom: 1rem;
+	}
+	.cats {
+		margin-bottom: 1rem;
+	}
+	.cats-label {
+		display: block;
+		font-size: 0.85rem;
+		color: #8b93a1;
+		margin-bottom: 0.4rem;
+	}
+	.cat-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+	}
+	.cat {
+		background: #1a1e27;
+		border: 1px solid #2a303c;
+		color: #8b93a1;
+		border-radius: 999px;
+		padding: 0.32rem 0.65rem;
+		font-size: 0.8rem;
+		cursor: pointer;
+	}
+	.cat.on {
+		background: #2563eb;
+		border-color: #2563eb;
+		color: #fff;
 	}
 	.modes button {
 		flex: 1;
