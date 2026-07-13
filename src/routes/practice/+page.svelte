@@ -50,7 +50,8 @@
 		unlockAudio(); // iOS 등에서 이어지는 자동 재생 권한 확보
 		phase = 'question';
 		remaining = 0;
-		await speakPrompt();
+		// 워치독: 재생이 어떤 이유로든 안 끝나도 12초 뒤엔 준비 단계로 진행
+		await Promise.race([speakPrompt(), wait(12000)]);
 		if (phase !== 'question') return; // 재생 중 리셋/문항 이동함
 		phase = 'prep';
 		remaining = q.prepSec;

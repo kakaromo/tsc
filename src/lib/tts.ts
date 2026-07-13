@@ -12,17 +12,30 @@ function getAudioEl(): HTMLAudioElement {
 	return currentAudio;
 }
 
+// 무음 WAV (0샘플) — src가 없어도 제스처 안에서 play()를 성공시켜 잠금을 푼다
+const SILENT_WAV =
+	'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';
+
 // 첫 사용자 제스처(재생 버튼) 시 호출해 오디오 재생 권한을 '해제'해 둔다.
+let audioUnlocked = false;
 export function unlockAudio() {
+	if (audioUnlocked) return; // 한 번 풀리면 다시 건드리지 않음 (재생 중 pause 레이스 방지)
 	try {
 		const a = getAudioEl();
+		if (!a.src) a.src = SILENT_WAV;
+		const srcAtUnlock = a.src;
 		a.muted = true;
-		void a.play().then(() => {
-			a.pause();
-			a.muted = false;
-		}).catch(() => {
-			a.muted = false;
-		});
+		void a
+			.play()
+			.then(() => {
+				audioUnlocked = true;
+				// 그 사이 실제 재생이 시작됐다면(src가 바뀜) 멈추지 않는다 — iOS 레이스 방지
+				if (a.src === srcAtUnlock) a.pause();
+				a.muted = false;
+			})
+			.catch(() => {
+				a.muted = false;
+			});
 	} catch {
 		/* 무시 */
 	}
@@ -67,18 +80,27 @@ function openDb(): Promise<IDBDatabase | null> {
 	return dbPromise;
 }
 
+// iOS Safari는 IndexedDB가 간혹 영원히 응답하지 않는 버그가 있어
+// 모든 IDB 조회에 타임아웃을 걸고, 넘기면 그냥 네트워크로 진행한다.
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+	return Promise.race([p, new Promise<T>((r) => setTimeout(() => r(fallback), ms))]);
+}
+
 async function idbGet(key: string): Promise<Blob | null> {
-	const db = await openDb();
-	if (!db) return null;
-	return new Promise((resolve) => {
-		try {
-			const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(key);
-			req.onsuccess = () => resolve(req.result instanceof Blob ? req.result : null);
-			req.onerror = () => resolve(null);
-		} catch {
-			resolve(null);
-		}
-	});
+	const inner = (async () => {
+		const db = await openDb();
+		if (!db) return null;
+		return new Promise<Blob | null>((resolve) => {
+			try {
+				const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(key);
+				req.onsuccess = () => resolve(req.result instanceof Blob ? req.result : null);
+				req.onerror = () => resolve(null);
+			} catch {
+				resolve(null);
+			}
+		});
+	})();
+	return withTimeout(inner, 1500, null);
 }
 
 async function idbPut(key: string, blob: Blob): Promise<void> {
@@ -93,29 +115,33 @@ async function idbPut(key: string, blob: Blob): Promise<void> {
 
 // 저장된 음성 캐시 현황 (설정 화면 표시용)
 export async function ttsCacheStats(): Promise<{ count: number; bytes: number }> {
-	const db = await openDb();
-	if (!db) return { count: 0, bytes: 0 };
-	return new Promise((resolve) => {
-		try {
-			const req = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
-			req.onsuccess = () => {
-				const blobs = (req.result ?? []) as Blob[];
-				resolve({
-					count: blobs.length,
-					bytes: blobs.reduce((s, b) => s + (b?.size ?? 0), 0)
-				});
-			};
-			req.onerror = () => resolve({ count: 0, bytes: 0 });
-		} catch {
-			resolve({ count: 0, bytes: 0 });
-		}
-	});
+	const empty = { count: 0, bytes: 0 };
+	const inner = (async () => {
+		const db = await openDb();
+		if (!db) return empty;
+		return new Promise<{ count: number; bytes: number }>((resolve) => {
+			try {
+				const req = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
+				req.onsuccess = () => {
+					const blobs = (req.result ?? []) as Blob[];
+					resolve({
+						count: blobs.length,
+						bytes: blobs.reduce((s, b) => s + (b?.size ?? 0), 0)
+					});
+				};
+				req.onerror = () => resolve(empty);
+			} catch {
+				resolve(empty);
+			}
+		});
+	})();
+	return withTimeout(inner, 2500, empty);
 }
 
 // 캐시 비우기 (음성 변경 후 용량 정리 등)
 export async function clearTtsCache(): Promise<void> {
 	cache.clear();
-	const db = await openDb();
+	const db = await withTimeout(openDb(), 1500, null);
 	if (!db) return;
 	try {
 		db.transaction(STORE, 'readwrite').objectStore(STORE).clear();
