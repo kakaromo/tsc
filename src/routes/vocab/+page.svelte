@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { vocabGroups } from '$lib/vocab';
 	import { grammarPoints } from '$lib/grammar';
+	import { universalAnswers } from '$lib/universals';
 	import { speak } from '$lib/tts';
 
-	let view = $state<'vocab' | 'grammar'>('vocab');
+	let view = $state<'vocab' | 'grammar' | 'universal'>('vocab');
 	let speaking = $state<string | null>(null);
 	let rate = $state(0.85);
 
@@ -32,6 +33,7 @@
 	<div class="switch">
 		<button class:on={view === 'vocab'} onclick={() => (view = 'vocab')}>📖 단어장</button>
 		<button class:on={view === 'grammar'} onclick={() => (view = 'grammar')}>📐 문법</button>
+		<button class:on={view === 'universal'} onclick={() => (view = 'universal')}>🗝 만능답변</button>
 	</div>
 
 	<a class="game-cta" href="/games">🎮 게임으로 연습하기 →</a>
@@ -41,7 +43,10 @@
 		<input type="range" min="0.5" max="1.1" step="0.05" bind:value={rate} aria-label="발음 속도" />
 		<span class="rate-val">{rate.toFixed(2)}x</span>
 	</div>
-	<p class="tip">{view === 'vocab' ? '단어를 누르면' : '예문을 누르면'} 발음을 들려줘요 🔊</p>
+	<p class="tip">
+		{view === 'vocab' ? '단어를 누르면' : view === 'grammar' ? '예문을 누르면' : '문장을 누르면'} 발음을
+		들려줘요 🔊
+	</p>
 
 	{#if view === 'vocab'}
 		{#each vocabGroups as g}
@@ -61,6 +66,26 @@
 			</section>
 		{/each}
 		<footer>양사와 존재문(有/在)만 정확하면 2부는 통과 💪</footer>
+	{:else if view === 'universal'}
+		<p class="uni-intro">
+			질문 유형만 알아들으면 조립해서 쓰는 템플릿이에요. 11개만 외우면 3부·4부에서 어떤 질문이
+			나와도 침묵하지 않아요.
+		</p>
+		{#each universalAnswers as u (u.situation)}
+			<section class="gram">
+				<h2>{u.situation}</h2>
+				<div class="formula">{u.trigger}</div>
+				<div class="ex-list">
+					<button class="ex" class:on={speaking === u.cn} onclick={() => say(u.cn)}>
+						<div class="ex-cn">{u.cn}</div>
+						<div class="ex-py">{u.pinyin}</div>
+						<div class="ex-ko">{u.ko}</div>
+					</button>
+				</div>
+				{#if u.note}<div class="warn">🔁 {u.note}</div>{/if}
+			</section>
+		{/each}
+		<footer>모르는 질문 = 만능답변 + 들린 키워드. 침묵만 안 하면 됩니다 💪</footer>
 	{:else}
 		{#each grammarPoints as g}
 			<section class="gram">
@@ -94,6 +119,15 @@
 		max-width: 720px;
 		margin: 0 auto;
 		padding: 1.5rem 1rem 3rem;
+	}
+	.uni-intro {
+		color: #b7bec9;
+		font-size: 0.9rem;
+		line-height: 1.6;
+		background: #12151c;
+		border-radius: 10px;
+		padding: 0.75rem 0.9rem;
+		margin: 0 0 1rem;
 	}
 	header {
 		margin-bottom: 1rem;

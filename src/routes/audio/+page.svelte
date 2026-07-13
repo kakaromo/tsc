@@ -4,6 +4,7 @@
 	import { grammarPoints } from '$lib/grammar';
 	import { questions } from '$lib/questions';
 	import { sentencePuzzles } from '$lib/sentences';
+	import { universalAnswers } from '$lib/universals';
 	import { AudioPlayer, type Segment } from '$lib/audioPlayer';
 	import { unlockAudio } from '$lib/tts';
 	import { loadSrs } from '$lib/gameLogic';
@@ -44,7 +45,8 @@
 		{ key: '2', label: '2부 그림' },
 		{ key: 'pattern', label: '2부 핵심 문형' },
 		{ key: '3', label: '3부 대화' },
-		{ key: '4', label: '4부 화제' }
+		{ key: '4', label: '4부 화제' },
+		{ key: 'universal', label: '🗝 만능답변' }
 	];
 	const partOn = (key: string) => sentParts.length === 0 || sentParts.includes(key);
 
@@ -229,6 +231,29 @@
 		}
 		if (partOn('3')) qa(3);
 		if (partOn('4')) qa(4);
+		// 만능답변: 상황(한국어) → (중국어 떠올릴 시간) → 만능 문장
+		if (partOn('universal')) {
+			for (const u of universalAnswers) {
+				blocks.push({
+					build: () => {
+						starts.push(segs.length);
+						dets.push({
+							tag: `만능답변 · ${u.situation}`,
+							lines: [{ cn: u.cn, pinyin: u.pinyin, ko: u.ko, note: `${u.trigger} — ${u.note ?? ''}` }]
+						});
+						segs.push({
+							text: `${u.situation}. ${u.ko}`,
+							lang: 'ko-KR',
+							rate: koRate,
+							pauseAfterMs: pauseSec * 1000
+						});
+						labs.push(`${u.situation} — ${u.ko}`);
+						segs.push({ text: u.cn, lang: 'zh-CN', rate: zhRate, pauseAfterMs: 700 });
+						labs.push(u.cn);
+					}
+				});
+			}
+		}
 		for (const b of shuffle ? shuffled(blocks) : blocks) b.build();
 		return { segs, labs, starts, dets };
 	}
